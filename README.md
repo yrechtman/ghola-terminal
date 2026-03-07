@@ -11,6 +11,7 @@ Built for offseason roster evaluation, trade analysis, draft capital planning, a
 
 ## Changelog
 
+- 2026-03-07: Remove Playwright/auth from fetch script — league is now public, no credentials needed.
 - 2026-03-07: Add SessionStart hook to auto-checkout main branch on session start.
 - 2026-03-07: Add GitHub Actions cron to auto-fetch Fantrax data daily.
 - 2026-03-07: Fully automated Fantrax login — just add credentials to scripts/.env and run.

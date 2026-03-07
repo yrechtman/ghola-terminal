@@ -21,15 +21,6 @@ jobs:
 
       - run: npm ci
 
-      - run: npm install -D playwright && npx playwright install chromium --with-deps
-
-      - name: Create credentials file
-        run: |
-          cat > scripts/.env <<'ENVEOF'
-          FANTRAX_EMAIL=${{ secrets.FANTRAX_EMAIL }}
-          FANTRAX_PASSWORD=${{ secrets.FANTRAX_PASSWORD }}
-          ENVEOF
-
       - name: Fetch data from Fantrax
         run: npm run fetch-data
 
