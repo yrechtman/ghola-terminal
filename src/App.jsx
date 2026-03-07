@@ -186,19 +186,19 @@ function PlayerRow({ p, showTeam = false, highlight = false, tags, onTagClick, o
           </span>
         )}
       </td>
-      {showTeam && <td style={{ ...styles.td, color: p.fantasyTeam === MY_TEAM ? C.amber : C.dim, fontSize: 10 }}>{p.fantasyTeam}</td>}
-      <td style={{ ...styles.td, color: C.dim, fontSize: 10 }}>{p.nbaTeam}</td>
-      <td style={{ ...styles.td, color: C.dim }}>{p.pos}</td>
+      {showTeam && <td style={{ ...styles.td, color: p.fantasyTeam === MY_TEAM ? C.amber : C.white, fontSize: 10 }}>{p.fantasyTeam}</td>}
+      <td style={{ ...styles.td, color: C.white, fontSize: 10 }}>{p.nbaTeam}</td>
+      <td style={{ ...styles.td, color: C.white }}>{p.pos}</td>
       <td style={{ ...styles.td, color: C.dim, fontSize: 10 }}>{p.eligible}</td>
       <td style={{ ...styles.td, color: statusColor(p.status), fontWeight: 700, fontSize: 10 }}>{p.status}</td>
       <td style={{ ...styles.tdR, color: ageColor(p.age), fontWeight: 700 }}>{p.age}</td>
       <td style={{ ...styles.tdR, fontWeight: 700 }}>{p.gp}</td>
       <td style={{ ...styles.tdR, color: C.green, fontWeight: 700 }}>{p.customFPG}</td>
       <td style={styles.tdR}>{p.totalCustomFP}</td>
-      <td style={{ ...styles.tdR, color: C.dim }}>{p.projSeasonFP}</td>
-      <td style={{ ...styles.tdR, color: C.dim }}>{p.stl}</td>
-      <td style={{ ...styles.tdR, color: C.dim }}>{p.blk}</td>
-      <td style={{ ...styles.tdR, color: C.dim }}>{p.ast}</td>
+      <td style={{ ...styles.tdR, color: C.white }}>{p.projSeasonFP}</td>
+      <td style={{ ...styles.tdR, color: C.white }}>{p.stl}</td>
+      <td style={{ ...styles.tdR, color: C.white }}>{p.blk}</td>
+      <td style={{ ...styles.tdR, color: C.white }}>{p.ast}</td>
       <td style={{ ...styles.tdR, color: p.to > 3 ? C.red : C.dim }}>{p.to}</td>
       <td style={{ ...styles.tdR, color: p.fgEff >= 0 ? C.green : C.red }}>{p.fgEff}</td>
     </tr>
@@ -366,11 +366,11 @@ function LeagueLandscape() {
             const isContender = standing ? standing.rank <= 5 : i < 5;
             return [
               <tr key={t.name} style={isMe ? styles.myTeamRow : {}}>
-                <td style={{ ...styles.td, color: C.dim }}>{i + 1}</td>
+                <td style={{ ...styles.td, color: C.white }}>{i + 1}</td>
                 <td style={{ ...styles.td, color: isMe ? C.amber : C.white, fontWeight: isMe ? 700 : 400 }}>{t.name}</td>
                 <td style={{ ...styles.tdR, color: C.green, fontWeight: 700 }}>{t.fpgSum}</td>
                 <td style={{ ...styles.tdR, color: standing && standing.rank <= 5 ? C.green : C.red, fontSize: 10 }}>{standing ? `${standing.w}-${standing.l}` : "?"}</td>
-                <td style={{ ...styles.td, fontSize: 10, color: C.dim }}>{t.top3.map(p => `${p.name.split(" ").pop()} (${p.customFPG})`).join(", ")}</td>
+                <td style={{ ...styles.td, fontSize: 10, color: C.white }}>{t.top3.map(p => `${p.name.split(" ").pop()} (${p.customFPG})`).join(", ")}</td>
                 <td style={{ ...styles.tdR, color: parseFloat(t.avgAge) > 29 ? C.amber : C.white }}>{t.avgAge}</td>
                 <td style={styles.tdR}>{t.total}</td>
                 <td style={styles.td}>
@@ -624,7 +624,7 @@ function DraftCapital() {
           return (
             <div key={i} style={styles.card}>
               <div style={styles.label}>2026 RD1 VIA {pick.from.toUpperCase()}</div>
-              <div style={{ fontSize: 11, color: C.dim, marginBottom: 8 }}>Standing: #{rank} {rank >= 6 ? "" : "(not lottery)"}</div>
+              <div style={{ fontSize: 11, color: C.white, marginBottom: 8 }}>Standing: #{rank} {rank >= 6 ? <span style={{ color: C.red }}>[LOTTERY]</span> : <span style={{ color: C.dim }}>(not lottery)</span>}</div>
               {odds ? (
                 <div>
                   <div style={{ display: "flex", gap: 2, marginBottom: 4 }}>
@@ -639,7 +639,7 @@ function DraftCapital() {
                   </div>
                 </div>
               ) : (
-                <div style={{ color: C.dim, fontSize: 10 }}>Projected pick #{5 + (6 - rank)}</div>
+                <div style={{ color: C.white, fontSize: 10 }}>Projected pick <span style={{ color: C.cyan, fontWeight: 700 }}>#{5 + (6 - rank)}</span></div>
               )}
               {simResults && <div style={{ marginTop: 6, fontSize: 10, color: C.amber }}>EV: #{simResults.perPick[i]?.ev}</div>}
             </div>
@@ -710,7 +710,7 @@ function DraftCapital() {
                 {simResults.perPick.map((pp, i) => (
                   <tr key={i}>
                     <td style={{ ...styles.td, color: C.white, fontWeight: 600, fontSize: 10 }}>{pp.team}</td>
-                    <td style={{ ...styles.tdR, color: pp.rank >= 6 ? C.red : C.dim }}>#{pp.rank}</td>
+                    <td style={{ ...styles.tdR, color: pp.rank >= 6 ? C.red : C.white }}>#{pp.rank}</td>
                     <td style={{ ...styles.tdR, color: C.amber, fontWeight: 700 }}>{pp.ev}</td>
                     {pp.dist.map((pct, j) => (
                       <td key={j} style={{ ...styles.tdR, fontSize: 10, color: pct > 20 ? C.green : pct > 5 ? C.white : C.dim }}>
@@ -745,7 +745,7 @@ function DraftCapital() {
                 const iOwn = myFirsts.some(p => p.from === s.team);
                 return (
                   <tr key={s.team} style={isMe ? styles.myTeamRow : {}}>
-                    <td style={{ ...styles.td, color: s.rank >= 6 ? C.red : C.dim }}>{s.rank}</td>
+                    <td style={{ ...styles.td, color: s.rank >= 6 ? C.red : C.white }}>{s.rank}</td>
                     <td style={{ ...styles.td, color: isMe ? C.amber : C.white, fontWeight: isMe ? 700 : 400, fontSize: 10 }}>{s.team}</td>
                     <td style={{ ...styles.tdR, fontSize: 10 }}>{s.w}-{s.l}</td>
                     <td style={{ ...styles.tdR, fontSize: 10 }}>{s.fpFor.toLocaleString()}</td>
@@ -804,7 +804,7 @@ function FreeAgents() {
   return (
     <div style={styles.card}>
       <div style={styles.cardTitle}>FREE AGENT SCANNER</div>
-      <div style={{ color: C.dim, fontSize: 11, lineHeight: 1.8, padding: "20px 0" }}>
+      <div style={{ color: C.white, fontSize: 11, lineHeight: 1.8, padding: "20px 0" }}>
         <div style={{ color: C.amber, marginBottom: 12 }}>[ DATA FEED REQUIRED ]</div>
         <div>Free agent data requires a full NBA player pool export from Fantrax.</div>
         <div>The roster CSVs only contain rostered players across the 10 teams.</div>
