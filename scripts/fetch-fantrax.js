@@ -58,12 +58,22 @@ async function fetchPrizePicks() {
     const res = await fetch("https://api.prizepicks.com/projections?league_id=7&per_page=1000", {
       headers: { "User-Agent": BROWSER_UA, "Accept": "application/json" },
     });
+    console.log(`  PrizePicks HTTP ${res.status} (${res.headers.get("content-type") || "no content-type"})`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    raw = await res.json();
+    const text = await res.text();
+    console.log(`  PrizePicks response size: ${text.length} bytes`);
+    try {
+      raw = JSON.parse(text);
+    } catch {
+      console.warn(`  PrizePicks response is not JSON (likely blocked/captcha): ${text.slice(0, 200)}`);
+      return {};
+    }
   } catch (err) {
     console.warn(`  PrizePicks fetch failed (${err.message}) — skipping player props`);
     return {};
   }
+
+  console.log(`  PrizePicks data[]: ${(raw.data || []).length} projections, included[]: ${(raw.included || []).length} records`);
 
   // Build player ID → { name, team } from the "included" sideload
   const playerMeta = {};
@@ -99,6 +109,10 @@ async function fetchPrizePicks() {
 async function fetchFantraxAdp() {
   try {
     const raw = await fantraxFetch("getAdp", { leagueId: LEAGUE_ID, sport: "NBA" });
+    console.log(`  Fantrax ADP top-level keys: ${Object.keys(raw).join(", ")}`);
+    // Save raw response for inspection
+    writeFileSync(join(ROOT, "scripts/.debug-adp.json"), JSON.stringify(raw, null, 2));
+
     const adp = {};
     const players = raw.players || raw.adpPlayers || raw.adpData || [];
     for (const p of Array.isArray(players) ? players : []) {
@@ -110,6 +124,7 @@ async function fetchFantraxAdp() {
         if (typeof data === "object" && data?.adp != null) adp[id] = data.adp;
       }
     }
+    console.log(`  Fantrax ADP: parsed ${Object.keys(adp).length} players`);
     return adp;
   } catch (err) {
     console.warn(`  Fantrax ADP fetch failed (${err.message}) — skipping dynasty ADP`);
