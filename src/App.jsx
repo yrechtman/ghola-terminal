@@ -210,10 +210,6 @@ function PlayerRow({ p, showTeam = false, highlight = false, showProps = false, 
       <td style={{ ...styles.tdR, color: C.green, fontWeight: 700 }}>{p.customFPG}</td>
       <td style={styles.tdR}>{p.totalCustomFP}</td>
       <td style={{ ...styles.tdR, color: C.white }}>{p.projSeasonFP}</td>
-      <td style={{ ...styles.tdR, color: C.white }}>{p.stl}</td>
-      <td style={{ ...styles.tdR, color: C.white }}>{p.blk}</td>
-      <td style={{ ...styles.tdR, color: C.white }}>{p.ast}</td>
-      <td style={{ ...styles.tdR, color: p.to > 3 ? C.red : C.dim }}>{p.to}</td>
       <td style={{ ...styles.tdR, color: p.fgEff >= 0 ? C.green : C.red }}>{p.fgEff}</td>
       {showProps && (
         <td style={{ ...styles.tdR, color: p.props ? C.cyan : C.dimmer, fontSize: 10, fontWeight: p.props ? 700 : 400 }}>
@@ -244,10 +240,6 @@ function TableHeader({ showTeam = false, showProps = false }) {
         <th style={styles.thR}>FPG</th>
         <th style={styles.thR}>TotFP</th>
         <th style={styles.thR}>Proj82</th>
-        <th style={styles.thR}>STL</th>
-        <th style={styles.thR}>BLK</th>
-        <th style={styles.thR}>AST</th>
-        <th style={styles.thR}>TO</th>
         <th style={styles.thR}>FG$</th>
         {showProps && <th style={{ ...styles.thR, color: C.cyan }}>P/R/A</th>}
         {showProps && <th style={{ ...styles.thR, color: C.cyan }}>ADP</th>}
@@ -324,7 +316,7 @@ function MyRoster() {
               { key: "Min", label: "MINOR LEAGUE" },
             ].map(({ key, label }) => (
               groups[key].length > 0 && [
-                <tr key={`h-${key}`}><td colSpan={18} style={styles.sectionHeader}>{label} ({groups[key].length})</td></tr>,
+                <tr key={`h-${key}`}><td colSpan={14} style={styles.sectionHeader}>{label} ({groups[key].length})</td></tr>,
                 ...groups[key].map(p => <PlayerRow key={p.id} p={p} highlight showProps tags={getPlayerTags(p)} onTagClick={handleTagClick} onTagAdd={handleTagAdd} />)
               ]
             ))}
