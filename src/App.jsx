@@ -333,7 +333,6 @@ const styles = {
   app: { background: C.bg, color: C.white, fontFamily: font, fontSize: 12, minHeight: "100vh", padding: 0 },
   header: { background: "#050505", borderBottom: `1px solid ${C.amber}`, padding: "8px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" },
   title: { color: C.amber, fontSize: 14, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" },
-  subtitle: { color: C.dim, fontSize: 10, letterSpacing: 1 },
   tabs: { display: "flex", gap: 0, background: "#080808", borderBottom: `1px solid ${C.dimmer}` },
   tab: (active) => ({
     padding: "8px 20px", cursor: "pointer", fontSize: 11, fontWeight: 600, letterSpacing: 1,
@@ -1031,7 +1030,6 @@ export default function App() {
       <div style={styles.header}>
         <div>
           <div style={styles.title}>THE GHOLA TERMINAL</div>
-          <div style={styles.subtitle}>tleilaxu // the bene gessirit // dynasty h2h points // 2025-26</div>
         </div>
         <div style={{ color: C.dim, fontSize: 10, textAlign: "right" }}>
           <div>DATA AS OF: MAR 2026</div>
