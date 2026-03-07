@@ -2,8 +2,12 @@ name: Fetch Fantrax Data
 
 on:
   schedule:
-    # Every day at 6am UTC (1am EST / 10pm PST)
-    - cron: "0 6 * * *"
+    # 8am EST — morning roster/standings refresh
+    - cron: "0 13 * * *"
+    # 2pm EST — PrizePicks props are usually posted by now
+    - cron: "0 19 * * *"
+    # 6pm EST — pre-game refresh before most tip-offs
+    - cron: "0 23 * * *"
   workflow_dispatch: # Manual trigger from GitHub UI
 
 permissions:
@@ -21,7 +25,7 @@ jobs:
 
       - run: npm ci
 
-      - name: Fetch data from Fantrax
+      - name: Fetch data (Fantrax + PrizePicks + ADP)
         run: npm run fetch-data
 
       - name: Commit and push if data changed
@@ -30,5 +34,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git diff --quiet src/data.json && echo "No changes" && exit 0
           git add src/data.json
-          git commit -m "Update Fantrax data ($(date -u +%Y-%m-%d))"
+          git commit -m "chore: update data ($(date -u '+%Y-%m-%d %H:%M UTC'))"
           git push
