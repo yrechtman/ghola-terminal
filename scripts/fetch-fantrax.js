@@ -54,12 +54,17 @@ async function fantraxFetch(endpoint, params = {}) {
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
 
   const cookie = getCookie();
-  const res = await fetch(url.toString(), {
-    headers: {
-      "Cookie": cookie,
-      "User-Agent": "GholaTerminal/1.0",
-    },
-  });
+  let res;
+  try {
+    res = await fetch(url.toString(), {
+      headers: {
+        "Cookie": cookie,
+        "User-Agent": "GholaTerminal/1.0",
+      },
+    });
+  } catch (err) {
+    throw new Error(`${endpoint}: network error (${err.cause?.code || err.message}). Is fantrax.com reachable?`);
+  }
 
   if (!res.ok) {
     const text = await res.text();
