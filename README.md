@@ -11,5 +11,6 @@ Built for offseason roster evaluation, trade analysis, draft capital planning, a
 
 ## Changelog
 
+- 2026-03-07: Extract data to data.json, add Fantrax API fetch script (`npm run fetch-data`).
 - 2026-03-07: Remove subtitle text below header title.
 - 2026-03-06: Initial commit. My Roster, League Landscape, Trade Analyzer, Draft Capital (Monte Carlo lottery sim), Free Agent placeholder.
