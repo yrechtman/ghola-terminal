@@ -6,6 +6,9 @@ on:
     - cron: "0 6 * * *"
   workflow_dispatch: # Manual trigger from GitHub UI
 
+permissions:
+  contents: write
+
 jobs:
   fetch:
     runs-on: ubuntu-latest
@@ -22,7 +25,7 @@ jobs:
 
       - name: Create credentials file
         run: |
-          cat > scripts/.env << 'ENVEOF'
+          cat > scripts/.env <<'ENVEOF'
           FANTRAX_EMAIL=${{ secrets.FANTRAX_EMAIL }}
           FANTRAX_PASSWORD=${{ secrets.FANTRAX_PASSWORD }}
           ENVEOF
