@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import DATA from "./data.json";
 
@@ -546,7 +546,10 @@ function DraftCapital() {
 
   const standings = STANDINGS;
 
-  const myFirsts = DRAFT_PICKS.tleilaxu.filter(p => p.round === 1);
+  // own picks have no `from` — default to MY_TEAM so the lottery sim resolves their rank correctly
+  const myFirsts = (DRAFT_PICKS[MY_TEAM] || [])
+    .filter(p => p.round === 1)
+    .map(p => ({ ...p, from: p.from || MY_TEAM }));
   const BALLS = { 10: 40, 9: 30, 8: 20, 7: 7, 6: 3 };
 
   const lotteryTeams = useMemo(() => {
@@ -608,7 +611,7 @@ function DraftCapital() {
     return { perPick, bestDist, bestEV, pFirst, pTop3, pTop5, N };
   }
 
-  useMemo(() => { setSimResults(runSim(simCount)); }, []);
+  useEffect(() => { setSimResults(runSim(simCount)); }, []);
 
   const doRun = () => setSimResults(runSim(simCount));
 
@@ -681,7 +684,7 @@ function DraftCapital() {
             </div>
 
             {/* Best pick distribution */}
-            <div style={{ fontSize: 10, color: C.amber, letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>BEST PICK DISTRIBUTION (YOUR HIGHEST OF 4 FIRSTS)</div>
+            <div style={{ fontSize: 10, color: C.amber, letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>BEST PICK DISTRIBUTION (YOUR HIGHEST OF {myFirsts.length} FIRSTS)</div>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={simResults.bestDist.map((pct, i) => ({ pick: `#${i + 1}`, pct: parseFloat(pct.toFixed(1)) }))} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                 <XAxis dataKey="pick" tick={{ fill: C.dim, fontSize: 10, fontFamily: font }} />
