@@ -13,9 +13,12 @@ Ideas, feedback, and deferred improvements. Not prioritized — just a running l
 ## Features
 
 - **Manual player tag overrides**: Allow manually setting/overriding tags (IRON, DUR, FRAG, YNG, SELL, etc.) on roster players instead of relying solely on auto-generated tags. Useful for tagging players based on context the algorithm can't see (e.g., marking a player as SELL even if they're young).
+- **Draft Center**: Full mock draft interface — simulate upcoming dynasty drafts, track pick order, make selections, see results. Should integrate with draft capital data already in the app.
+- **Fix Draft Capital tab**: Current implementation is broken — audit and repair the Monte Carlo lottery sim and any broken rendering.
 
 ---
 
 ## Data / Content
 
-_(empty for now)_
+- **Additional data feeds**: Supplement Fantrax data with external sources — candidates include NBA API (official stats), Hashtag Basketball Premium, Basketball Monster. Evaluate what each provides and what's worth integrating.
+- **Cross-source player stat joins**: Once additional feeds are pulling, join player stats from those sources with Fantrax roster/league data. Unified player profiles with dynasty-relevant metrics (age, stats, ADP, rankings, etc).
