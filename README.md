@@ -11,6 +11,7 @@ Built for offseason roster evaluation, trade analysis, draft capital planning, a
 
 ## Changelog
 
+- 2026-03-07: Add Playwright auto-login for Fantrax API (no more manual cookie grabbing).
 - 2026-03-07: Add full Fantrax API transforms for standings, draft picks, and roster composition.
 - 2026-03-07: Extract data to data.json, add Fantrax API fetch script (`npm run fetch-data`).
 - 2026-03-07: Remove subtitle text below header title.

@@ -25,5 +25,6 @@ dist-ssr
 
 # Fantrax data fetcher secrets and debug output
 scripts/.fantrax-cookie
+scripts/.fantrax-auth
 scripts/.fantrax-config.json
 scripts/.debug-*.json

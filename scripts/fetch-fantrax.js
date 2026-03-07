@@ -5,11 +5,12 @@
 // Usage:
 //   npm run fetch-data
 //
-// Setup:
-//   1. Copy your Fantrax session cookie from browser DevTools:
-//      - Open fantrax.com while logged in
-//      - DevTools > Network > any request > copy the Cookie header value
-//   2. Save to scripts/.fantrax-cookie (one line, gitignored)
+// First-time setup:
+//   npm run fetch-data --setup
+//   (Opens a browser to log into Fantrax and saves session for reuse)
+//
+// Subsequent runs just use the saved session:
+//   npm run fetch-data
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
@@ -20,6 +21,7 @@ const ROOT = join(__dirname, "..");
 
 const LEAGUE_ID = "i4mue2axmd7ntz13";
 const BASE_URL = "https://www.fantrax.com/fxea/general";
+const AUTH_STATE_PATH = join(__dirname, ".fantrax-auth");
 
 // Fantrax team ID → team name (from getLeagueInfo matchups)
 const FANTRAX_TEAM_MAP = {
@@ -42,33 +44,121 @@ const TEAM_NAME_TO_NUM = {
   "team hyphen": 8, "Big Spite Guys": 9, "The Cooper Flaggots": 10, "The Travel Agency": 11,
 };
 
-function getCookie() {
-  const cookiePath = join(__dirname, ".fantrax-cookie");
-  if (!existsSync(cookiePath)) {
-    console.error("ERROR: No cookie file found at scripts/.fantrax-cookie");
-    console.error("");
-    console.error("To set up:");
-    console.error("  1. Open fantrax.com in your browser while logged in");
-    console.error("  2. Open DevTools > Network tab");
-    console.error("  3. Click any request to fantrax.com");
-    console.error("  4. Copy the full Cookie header value");
-    console.error("  5. Save it to scripts/.fantrax-cookie");
+// ============================================================
+// AUTH: Playwright-based login with saved session
+// ============================================================
+
+async function getPlaywrightCookies() {
+  let chromium;
+  try {
+    ({ chromium } = await import("playwright"));
+  } catch {
+    console.error("ERROR: Playwright not installed. Run:");
+    console.error("  npm install -D playwright");
+    console.error("  npx playwright install chromium");
     process.exit(1);
   }
+
+  const isSetup = process.argv.includes("--setup");
+  const hasAuth = existsSync(AUTH_STATE_PATH);
+
+  if (!hasAuth && !isSetup) {
+    console.log("No saved session found. Running first-time login...");
+    console.log("A browser window will open — log into Fantrax, then close it.");
+    console.log("");
+  }
+
+  if (isSetup || !hasAuth) {
+    // Interactive login: open visible browser, let user log in
+    console.log("Opening browser for Fantrax login...");
+    const browser = await chromium.launch({ headless: false });
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.goto("https://www.fantrax.com/login");
+    console.log("Log into Fantrax in the browser window.");
+    console.log("Once you see your league page, press Enter here to continue...");
+
+    // Wait for user to press Enter
+    await new Promise(resolve => {
+      process.stdin.setRawMode?.(false);
+      process.stdin.resume();
+      process.stdin.once("data", resolve);
+    });
+
+    // Save the auth state (cookies + localStorage)
+    await context.storageState({ path: AUTH_STATE_PATH });
+    await browser.close();
+    console.log("Session saved to scripts/.fantrax-auth");
+    console.log("");
+  }
+
+  // Load saved session and extract cookies
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ storageState: AUTH_STATE_PATH });
+
+  // Navigate to Fantrax to ensure cookies are fresh / activate the session
+  const page = await context.newPage();
+  try {
+    await page.goto("https://www.fantrax.com/fantasy/league/" + LEAGUE_ID + "/home", {
+      waitUntil: "networkidle",
+      timeout: 30000,
+    });
+  } catch {
+    // Timeout is OK — we just need the cookies from the redirect chain
+  }
+
+  const cookies = await context.cookies("https://www.fantrax.com");
+  await browser.close();
+
+  if (!cookies.length) {
+    console.error("ERROR: No cookies captured. Session may have expired.");
+    console.error("Run: npm run fetch-data -- --setup");
+    process.exit(1);
+  }
+
+  // Format as Cookie header string
+  return cookies.map(c => `${c.name}=${c.value}`).join("; ");
+}
+
+// Fallback: read cookie from file (old method)
+function getFileCookie() {
+  const cookiePath = join(__dirname, ".fantrax-cookie");
+  if (!existsSync(cookiePath)) return null;
   return readFileSync(cookiePath, "utf8").trim();
 }
+
+async function getCookie() {
+  // Try file-based cookie first (faster, no browser needed)
+  const fileCookie = getFileCookie();
+  if (fileCookie) {
+    console.log("  Using cookie from scripts/.fantrax-cookie");
+    return fileCookie;
+  }
+
+  // Fall back to Playwright
+  console.log("  Using Playwright for authentication...");
+  return getPlaywrightCookies();
+}
+
+// ============================================================
+// API FETCHING
+// ============================================================
+
+let _cookie = null;
 
 async function fantraxFetch(endpoint, params = {}) {
   const url = new URL(`${BASE_URL}/${endpoint}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
 
-  const cookie = getCookie();
+  if (!_cookie) _cookie = await getCookie();
+
   let res;
   try {
     res = await fetch(url.toString(), {
       headers: {
-        "Cookie": cookie,
-        "User-Agent": "GholaTerminal/1.0",
+        "Cookie": _cookie,
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
       },
     });
   } catch (err) {
@@ -88,9 +178,6 @@ async function fantraxFetch(endpoint, params = {}) {
 // ============================================================
 
 function transformStandings(raw) {
-  // raw is an array of: { teamName, totalPointsFor, teamId, gamesBack, rank, points: "14-4-0", winPercentage }
-  // App expects: { rank, team, w, l, fpFor, fpAgainst, streak }
-  // API doesn't provide fpAgainst or streak, so we omit those
   return raw.map(t => {
     const [w, l] = t.points.split("-").map(Number);
     return {
@@ -99,48 +186,37 @@ function transformStandings(raw) {
       w,
       l,
       fpFor: t.totalPointsFor,
-      fpAgainst: 0, // not available from API
-      streak: "",    // not available from API
+      fpAgainst: 0,
+      streak: "",
     };
   }).sort((a, b) => a.rank - b.rank);
 }
 
 function transformDraftPicks(raw) {
-  // raw.futureDraftPicks is array of: { currentOwnerTeamId, round, year, originalOwnerTeamId }
-  // App expects: { [teamName]: [{ round, from? }] }
   const picks = {};
-
-  // Initialize all teams
   Object.values(FANTRAX_TEAM_MAP).forEach(name => { picks[name] = []; });
 
-  // Only include 2026 picks (current draft year)
   const futurePicks = raw.futureDraftPicks.filter(p => p.year === 2026);
 
   for (const pick of futurePicks) {
     const ownerName = FANTRAX_TEAM_MAP[pick.currentOwnerTeamId];
     const originalName = FANTRAX_TEAM_MAP[pick.originalOwnerTeamId];
-
     if (!ownerName || !originalName) continue;
 
     const entry = { round: pick.round };
-    // Only include "from" if the pick was traded (current owner != original owner)
     if (ownerName !== originalName) {
       entry.from = originalName;
     }
-
     picks[ownerName].push(entry);
   }
 
-  // Sort each team's picks by round
   for (const team of Object.keys(picks)) {
     picks[team].sort((a, b) => a.round - b.round);
   }
-
   return picks;
 }
 
 function transformRosters(rostersRaw, playerIdsRaw, existingCsv) {
-  // Build a lookup from fantrax player ID → player info
   const playerLookup = {};
   for (const [id, info] of Object.entries(playerIdsRaw)) {
     if (info.name && info.name !== "Team") {
@@ -155,21 +231,19 @@ function transformRosters(rostersRaw, playerIdsRaw, existingCsv) {
     }
   }
 
-  // Map roster status from API format to app format
   const statusMap = { ACTIVE: "Act", RESERVE: "Res", INJURED_RESERVE: "IR", MINORS: "Min" };
-
-  // Build new RAW_CSV keyed by numeric team ID
-  // We update roster composition (who's on which team, status) from API
-  // but keep existing stat lines from CSV since the API doesn't provide stats
   const newCsv = {};
 
   // Parse existing CSV to build a lookup by player ID → stat line
   const existingStats = {};
   for (const [teamNum, csv] of Object.entries(existingCsv)) {
     for (const line of csv.split("\n").filter(Boolean)) {
-      // Extract the player ID (first field, wrapped in * like *06217*)
       const match = line.match(/^\*([^*]+)\*/);
-      if (match) {
+      if (!match) {
+        // Try quoted format: "*ID*"
+        const qMatch = line.match(/^"?\*([^*]+)\*"?/);
+        if (qMatch) existingStats[qMatch[1]] = line;
+      } else {
         existingStats[match[1]] = line;
       }
     }
@@ -187,11 +261,8 @@ function transformRosters(rostersRaw, playerIdsRaw, existingCsv) {
       const status = statusMap[item.status] || item.status;
       const pos = item.position || "";
 
-      // Check if we have existing stats for this player
       if (existingStats[playerId]) {
-        // Update the status and position in the existing line
         let line = existingStats[playerId];
-        // Replace position (2nd field) and status (6th field)
         const fields = [];
         let current = "";
         let inQuotes = false;
@@ -203,22 +274,17 @@ function transformRosters(rostersRaw, playerIdsRaw, existingCsv) {
         }
         fields.push(current.trim());
 
-        // Update position (index 1) and status (index 5)
         fields[1] = pos || fields[1];
         fields[5] = status;
         lines.push(fields.map(f => `"${f}"`).join(","));
       } else {
-        // New player not in existing CSV — create a minimal line
         const info = playerLookup[playerId] || { name: `Unknown(${playerId})`, nbaTeam: "(N/A)", eligible: pos };
-        // Format: ID, Pos, Name, NBA Team, Eligible, Status, Age, TotalFP, FPG, GP, then 11 stat zeros
         const zeroes = Array(11).fill("0").join('","');
         lines.push(`"*${playerId}*","${pos}","${info.name}","${info.nbaTeam}","${info.eligible}","${status}","0","0","0","0","${zeroes}"`);
       }
     }
-
     newCsv[teamNum] = lines.join("\n");
   }
-
   return newCsv;
 }
 
@@ -234,7 +300,6 @@ async function main() {
   const existingData = JSON.parse(readFileSync(join(ROOT, "src/data.json"), "utf8"));
 
   try {
-    // Fetch all endpoints in parallel
     console.log("Fetching data from Fantrax API...");
     const [standingsRaw, rostersRaw, draftPicksRaw, playerIdsRaw] = await Promise.all([
       fantraxFetch("getStandings", { leagueId: LEAGUE_ID }),
@@ -243,7 +308,6 @@ async function main() {
       fantraxFetch("getPlayerIds", { sport: "NBA" }),
     ]);
 
-    // Save debug files
     writeFileSync(join(__dirname, ".debug-standings.json"), JSON.stringify(standingsRaw, null, 2));
     writeFileSync(join(__dirname, ".debug-rosters.json"), JSON.stringify(rostersRaw, null, 2));
     writeFileSync(join(__dirname, ".debug-draftpicks.json"), JSON.stringify(draftPicksRaw, null, 2));
@@ -251,7 +315,6 @@ async function main() {
     console.log("  Raw responses saved to scripts/.debug-*.json");
     console.log("");
 
-    // Transform data
     console.log("Transforming data...");
 
     const standings = transformStandings(standingsRaw);
@@ -265,7 +328,6 @@ async function main() {
     const totalPlayers = Object.values(rawCsv).reduce((sum, csv) => sum + csv.split("\n").filter(Boolean).length, 0);
     console.log(`  Rosters: ${totalPlayers} players across ${Object.keys(rawCsv).length} teams`);
 
-    // Write updated data.json
     const newData = {
       STANDINGS: standings,
       DRAFT_PICKS: draftPicks,
@@ -286,8 +348,8 @@ async function main() {
     console.error("FETCH FAILED:", err.message);
     console.error("");
     if (err.message.includes("403") || err.message.includes("quote")) {
-      console.error("This likely means your cookie has expired.");
-      console.error("Grab a fresh one from browser DevTools and save to scripts/.fantrax-cookie");
+      console.error("Cookie/session expired. Re-run with --setup to log in again:");
+      console.error("  npm run fetch-data -- --setup");
     }
     console.error("");
     console.error("Existing data.json was NOT modified.");
