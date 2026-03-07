@@ -11,7 +11,9 @@ Built for offseason roster evaluation, trade analysis, draft capital planning, a
 
 ## Changelog
 
+- 2026-03-07: Legibility pass (C.dim → #999) + manual player tag overrides on My Roster.
 - 2026-03-07: Replace hardcoded data with Fantrax API — scoring, team map, rosters, standings, draft picks, league info all live.
+- 2026-03-07: Add Draft Center, fix Draft Capital, data feeds, and player stat joins to roadmap.
 - 2026-03-07: Add auto-merge action — claude/* branches merge to main automatically.
 - 2026-03-07: Remove Playwright/auth from fetch script — league is now public, no credentials needed.
 - 2026-03-07: Add SessionStart hook to auto-checkout main branch on session start.

@@ -82,13 +82,26 @@ const allPlayers = Object.entries(RAW_CSV).flatMap(([k, v]) => parseCSV(v, parse
 const C = {
   bg: "#0a0a0a", panel: "#111111", border: "#1a1a1a",
   amber: "#ff8c00", green: "#00ff41", cyan: "#00e5ff", red: "#ff3333",
-  white: "#e0e0e0", dim: "#555555", dimmer: "#333333",
+  white: "#e0e0e0", dim: "#999999", dimmer: "#444444",
   yellow: "#ffd700", magenta: "#ff00ff",
 };
 
 const ageColor = (age) => age < 24 ? C.green : age <= 28 ? C.yellow : age <= 31 ? C.amber : C.red;
 const statusColor = (s) => s === "Act" ? C.green : s === "Res" ? C.amber : s === "IR" ? C.red : C.cyan;
 const deltaColor = (v) => v > 0 ? C.green : v < 0 ? C.red : C.dim;
+
+// Tags
+const TAG_COLORS = { IRON: C.green, DUR: C.cyan, FRAG: C.red, YNG: C.magenta, SELL: C.amber, HOLD: C.yellow, BUY: "#00ff88" };
+const ALL_TAGS = Object.keys(TAG_COLORS);
+function getAutoTags(p, forMyTeam = false) {
+  const tags = [];
+  if (p.gp >= 60) tags.push("IRON");
+  else if (p.gp >= 55) tags.push("DUR");
+  if (p.gp > 0 && p.gp <= 30) tags.push("FRAG");
+  if (p.age <= 23) tags.push("YNG");
+  if (forMyTeam && p.age >= 29) tags.push("SELL");
+  return tags;
+}
 
 const font = "'IBM Plex Mono', 'Fira Code', 'Courier New', monospace";
 
@@ -131,17 +144,47 @@ const styles = {
 // COMPONENTS
 // ============================================================
 
-function PlayerRow({ p, showTeam = false, highlight = false }) {
+function PlayerRow({ p, showTeam = false, highlight = false, tags, onTagClick, onTagAdd }) {
+  const [picking, setPicking] = useState(false);
   const rowStyle = highlight ? styles.myTeamRow : {};
+  const displayTags = tags !== undefined ? tags : getAutoTags(p, highlight);
+  const addable = ALL_TAGS.filter(t => !displayTags.includes(t));
+  const canEdit = !!onTagClick;
+
   return (
     <tr style={rowStyle}>
       <td style={styles.td}>
         <span style={{ color: C.white, fontWeight: 600 }}>{p.name}</span>
-        {p.gp >= 60 && <span style={styles.badge(C.green)}>IRON</span>}
-        {p.gp >= 55 && p.gp < 60 && <span style={styles.badge(C.cyan)}>DUR</span>}
-        {p.gp > 0 && p.gp <= 30 && <span style={styles.badge(C.red)}>FRAG</span>}
-        {p.age <= 23 && <span style={styles.badge(C.magenta)}>YNG</span>}
-        {highlight && p.age >= 29 && <span style={styles.badge(C.amber)}>SELL</span>}
+        {displayTags.map(tag => (
+          <span
+            key={tag}
+            style={{ ...styles.badge(TAG_COLORS[tag] || C.dim), cursor: canEdit ? "pointer" : "default", opacity: canEdit ? 0.9 : 1 }}
+            title={canEdit ? "Click to remove" : undefined}
+            onClick={canEdit ? () => onTagClick(p, tag) : undefined}
+          >{tag}</span>
+        ))}
+        {canEdit && !picking && addable.length > 0 && (
+          <span
+            style={{ ...styles.badge(C.dimmer), cursor: "pointer", color: C.dim, borderColor: C.dimmer }}
+            onClick={() => setPicking(true)}
+            title="Add tag"
+          >+</span>
+        )}
+        {canEdit && picking && (
+          <span style={{ marginLeft: 4 }}>
+            {addable.map(tag => (
+              <span
+                key={tag}
+                style={{ ...styles.badge(TAG_COLORS[tag] || C.dim), cursor: "pointer", opacity: 0.6 }}
+                onClick={() => { onTagAdd(p, tag); setPicking(false); }}
+              >{tag}</span>
+            ))}
+            <span
+              style={{ ...styles.badge(C.dimmer), cursor: "pointer", color: C.dim, marginLeft: 2 }}
+              onClick={() => setPicking(false)}
+            >×</span>
+          </span>
+        )}
       </td>
       {showTeam && <td style={{ ...styles.td, color: p.fantasyTeam === MY_TEAM ? C.amber : C.dim, fontSize: 10 }}>{p.fantasyTeam}</td>}
       <td style={{ ...styles.td, color: C.dim, fontSize: 10 }}>{p.nbaTeam}</td>
@@ -192,10 +235,15 @@ function TableHeader({ showTeam = false }) {
 // ============================================================
 
 function MyRoster() {
+  const [tagOverrides, setTagOverrides] = useState({});
   const myPlayers = allPlayers.filter(p => p.fantasyTeam === MY_TEAM);
   const groups = { Act: [], Res: [], IR: [], Min: [] };
   myPlayers.forEach(p => { if (groups[p.status]) groups[p.status].push(p); });
   Object.values(groups).forEach(g => g.sort((a, b) => b.customFPG - a.customFPG));
+
+  const getPlayerTags = (p) => tagOverrides[p.id] !== undefined ? tagOverrides[p.id] : getAutoTags(p, true);
+  const handleTagClick = (p, tag) => setTagOverrides(prev => ({ ...prev, [p.id]: getPlayerTags(p).filter(t => t !== tag) }));
+  const handleTagAdd = (p, tag) => setTagOverrides(prev => ({ ...prev, [p.id]: [...getPlayerTags(p), tag] }));
 
   const active = groups.Act;
   const activeFPG = active.reduce((s, p) => s + p.customFPG, 0);
@@ -251,7 +299,7 @@ function MyRoster() {
             ].map(({ key, label }) => (
               groups[key].length > 0 && [
                 <tr key={`h-${key}`}><td colSpan={16} style={styles.sectionHeader}>{label} ({groups[key].length})</td></tr>,
-                ...groups[key].map(p => <PlayerRow key={p.id} p={p} highlight />)
+                ...groups[key].map(p => <PlayerRow key={p.id} p={p} highlight tags={getPlayerTags(p)} onTagClick={handleTagClick} onTagAdd={handleTagAdd} />)
               ]
             ))}
           </tbody>
