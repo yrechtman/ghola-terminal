@@ -7,7 +7,7 @@
 // Usage:
 //   npm run fetch-data
 
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -16,27 +16,6 @@ const ROOT = join(__dirname, "..");
 
 const LEAGUE_ID = "i4mue2axmd7ntz13";
 const BASE_URL = "https://www.fantrax.com/fxea/general";
-
-// Fantrax team ID → team name
-const FANTRAX_TEAM_MAP = {
-  "76tybywxmd7ntz1q": "tleilaxu",
-  "e9xiok73md7ntz1v": "Light Years Ahead",
-  "v989h0jhmd7ntz1r": "RG Kush",
-  "8mrlmcglmd7ntz1w": "Team sugar boo boo",
-  "k25pfgihmd7ntz1o": "cam thomas jefferson",
-  "w4nzg8a8md7ntz1x": "team tall white boi",
-  "fh0tyohumd7ntz1u": "team hyphen",
-  "25dnc4gmmd7ntz1r": "Big Spite Guys",
-  "ggn4g94lmd7ntz1t": "The Cooper Flaggots",
-  "0800ycjzmd7ntz1s": "The Travel Agency",
-};
-
-// App uses numeric team IDs (2-11) for RAW_CSV keys
-const TEAM_NAME_TO_NUM = {
-  "tleilaxu": 2, "Light Years Ahead": 3, "RG Kush": 4,
-  "Team sugar boo boo": 5, "cam thomas jefferson": 6, "team tall white boi": 7,
-  "team hyphen": 8, "Big Spite Guys": 9, "The Cooper Flaggots": 10, "The Travel Agency": 11,
-};
 
 // ============================================================
 // API FETCHING
@@ -69,6 +48,61 @@ async function fantraxFetch(endpoint, params = {}) {
 // TRANSFORMS
 // ============================================================
 
+// Build team ID → name map from getLeagueInfo response
+function buildTeamMap(leagueInfoRaw) {
+  const teamMap = {};
+  if (leagueInfoRaw.teamInfo) {
+    for (const [teamId, info] of Object.entries(leagueInfoRaw.teamInfo)) {
+      teamMap[teamId] = info.name;
+    }
+  }
+  return teamMap;
+}
+
+// Extract scoring weights from getLeagueInfo response
+function extractScoring(leagueInfoRaw) {
+  const scoring = {};
+  if (!leagueInfoRaw.scoringSystem?.scoringCategorySettings) return scoring;
+
+  for (const group of leagueInfoRaw.scoringSystem.scoringCategorySettings) {
+    for (const config of group.configs || []) {
+      if (config.points !== undefined && config.scoringCategory) {
+        const code = config.scoringCategory.shortName || config.scoringCategory.code || config.scoringCategory.name;
+        if (code) scoring[code] = config.points;
+      }
+    }
+  }
+  return scoring;
+}
+
+// Extract league metadata from getLeagueInfo
+function extractLeagueInfo(leagueInfoRaw, teamMap) {
+  const info = {
+    leagueName: leagueInfoRaw.leagueName || "The Bene Gessirit",
+    scoring: extractScoring(leagueInfoRaw),
+    teams: {},
+    rosterInfo: null,
+  };
+
+  // Build teams object: fantraxId → { name, id (numeric) }
+  let numericId = 2;
+  for (const [fantraxId, name] of Object.entries(teamMap)) {
+    info.teams[fantraxId] = { name, numericId };
+    numericId++;
+  }
+
+  // Roster constraints
+  if (leagueInfoRaw.rosterInfo) {
+    info.rosterInfo = {
+      maxTotalPlayers: leagueInfoRaw.rosterInfo.maxTotalPlayers,
+      maxActivePlayers: leagueInfoRaw.rosterInfo.maxTotalActivePlayers,
+      maxReservePlayers: leagueInfoRaw.rosterInfo.maxTotalReservePlayers,
+    };
+  }
+
+  return info;
+}
+
 function transformStandings(raw) {
   return raw.map(t => {
     const [w, l] = t.points.split("-").map(Number);
@@ -84,15 +118,15 @@ function transformStandings(raw) {
   }).sort((a, b) => a.rank - b.rank);
 }
 
-function transformDraftPicks(raw) {
+function transformDraftPicks(raw, teamMap) {
   const picks = {};
-  Object.values(FANTRAX_TEAM_MAP).forEach(name => { picks[name] = []; });
+  Object.values(teamMap).forEach(name => { picks[name] = []; });
 
   const futurePicks = raw.futureDraftPicks.filter(p => p.year === 2026);
 
   for (const pick of futurePicks) {
-    const ownerName = FANTRAX_TEAM_MAP[pick.currentOwnerTeamId];
-    const originalName = FANTRAX_TEAM_MAP[pick.originalOwnerTeamId];
+    const ownerName = teamMap[pick.currentOwnerTeamId];
+    const originalName = teamMap[pick.originalOwnerTeamId];
     if (!ownerName || !originalName) continue;
 
     const entry = { round: pick.round };
@@ -108,7 +142,7 @@ function transformDraftPicks(raw) {
   return picks;
 }
 
-function transformRosters(rostersRaw, playerIdsRaw, existingCsv) {
+function transformRosters(rostersRaw, playerIdsRaw, existingCsv, leagueInfo) {
   const playerLookup = {};
   for (const [id, info] of Object.entries(playerIdsRaw)) {
     if (info.name && info.name !== "Team") {
@@ -141,10 +175,9 @@ function transformRosters(rostersRaw, playerIdsRaw, existingCsv) {
   }
 
   for (const [fantraxTeamId, teamData] of Object.entries(rostersRaw.rosters)) {
-    const teamName = FANTRAX_TEAM_MAP[fantraxTeamId];
-    if (!teamName) continue;
-    const teamNum = TEAM_NAME_TO_NUM[teamName];
-    if (!teamNum) continue;
+    const teamInfo = leagueInfo.teams[fantraxTeamId];
+    if (!teamInfo) continue;
+    const teamNum = teamInfo.numericId;
 
     const lines = [];
     for (const item of teamData.rosterItems) {
@@ -192,37 +225,59 @@ async function main() {
 
   try {
     console.log("Fetching data from Fantrax API...");
-    const [standingsRaw, rostersRaw, draftPicksRaw, playerIdsRaw] = await Promise.all([
+    const [standingsRaw, rostersRaw, draftPicksRaw, playerIdsRaw, leagueInfoRaw] = await Promise.all([
       fantraxFetch("getStandings", { leagueId: LEAGUE_ID }),
       fantraxFetch("getTeamRosters", { leagueId: LEAGUE_ID }),
       fantraxFetch("getDraftPicks", { leagueId: LEAGUE_ID }),
       fantraxFetch("getPlayerIds", { sport: "NBA" }),
+      fantraxFetch("getLeagueInfo", { leagueId: LEAGUE_ID }),
     ]);
 
     writeFileSync(join(__dirname, ".debug-standings.json"), JSON.stringify(standingsRaw, null, 2));
     writeFileSync(join(__dirname, ".debug-rosters.json"), JSON.stringify(rostersRaw, null, 2));
     writeFileSync(join(__dirname, ".debug-draftpicks.json"), JSON.stringify(draftPicksRaw, null, 2));
     writeFileSync(join(__dirname, ".debug-playerids.json"), JSON.stringify(playerIdsRaw, null, 2));
+    writeFileSync(join(__dirname, ".debug-leagueinfo.json"), JSON.stringify(leagueInfoRaw, null, 2));
     console.log("  Raw responses saved to scripts/.debug-*.json");
     console.log("");
 
     console.log("Transforming data...");
 
+    // Build team map from league info (no more hardcoded team names)
+    const teamMap = buildTeamMap(leagueInfoRaw);
+    console.log(`  Teams: ${Object.keys(teamMap).length} teams from league info`);
+
+    const leagueInfo = extractLeagueInfo(leagueInfoRaw, teamMap);
+    const scoringKeys = Object.keys(leagueInfo.scoring);
+    console.log(`  Scoring: ${scoringKeys.length} categories (${scoringKeys.join(", ")})`);
+
     const standings = transformStandings(standingsRaw);
     console.log(`  Standings: ${standings.length} teams`);
 
-    const draftPicks = transformDraftPicks(draftPicksRaw);
+    const draftPicks = transformDraftPicks(draftPicksRaw, teamMap);
     const totalPicks = Object.values(draftPicks).reduce((sum, arr) => sum + arr.length, 0);
     console.log(`  Draft picks: ${totalPicks} picks across ${Object.keys(draftPicks).length} teams`);
 
-    const rawCsv = transformRosters(rostersRaw, playerIdsRaw, existingData.RAW_CSV);
+    const rawCsv = transformRosters(rostersRaw, playerIdsRaw, existingData.RAW_CSV, leagueInfo);
     const totalPlayers = Object.values(rawCsv).reduce((sum, csv) => sum + csv.split("\n").filter(Boolean).length, 0);
     console.log(`  Rosters: ${totalPlayers} players across ${Object.keys(rawCsv).length} teams`);
+
+    // Build TEAM_MAP (numericId → name) for the app
+    const appTeamMap = {};
+    for (const { name, numericId } of Object.values(leagueInfo.teams)) {
+      appTeamMap[numericId] = name;
+    }
 
     const newData = {
       STANDINGS: standings,
       DRAFT_PICKS: draftPicks,
       RAW_CSV: rawCsv,
+      TEAM_MAP: appTeamMap,
+      LEAGUE_INFO: {
+        leagueName: leagueInfo.leagueName,
+        scoring: leagueInfo.scoring,
+        rosterInfo: leagueInfo.rosterInfo,
+      },
       _meta: {
         lastUpdated: new Date().toISOString(),
         leagueId: LEAGUE_ID,

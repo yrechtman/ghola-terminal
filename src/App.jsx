@@ -6,13 +6,17 @@ import DATA from "./data.json";
 // DATA
 // ============================================================
 
-const SCORING = { FGM: 2, FGA: -1, "3PTM": 1, FTM: 1, FTA: -1, PTS: 1, REB: 1, AST: 2, ST: 4, BLK: 4, TO: -2 };
+// Scoring weights — from API via data.json, with hardcoded fallback
+const SCORING_FALLBACK = { FGM: 2, FGA: -1, "3PTM": 1, FTM: 1, FTA: -1, PTS: 1, REB: 1, AST: 2, ST: 4, BLK: 4, TO: -2 };
+const SCORING = (DATA.LEAGUE_INFO && Object.keys(DATA.LEAGUE_INFO.scoring || {}).length > 0) ? DATA.LEAGUE_INFO.scoring : SCORING_FALLBACK;
 
-const TEAM_MAP = {
+// Team map — from API via data.json, with hardcoded fallback
+const TEAM_MAP_FALLBACK = {
   2: "tleilaxu", 3: "Light Years Ahead", 4: "RG Kush",
   5: "Team sugar boo boo", 6: "cam thomas jefferson", 7: "team tall white boi",
   8: "team hyphen", 9: "Big Spite Guys", 10: "The Cooper Flaggots", 11: "The Travel Agency"
 };
+const TEAM_MAP = DATA.TEAM_MAP || TEAM_MAP_FALLBACK;
 
 const MY_TEAM = "tleilaxu";
 
@@ -40,12 +44,20 @@ function parseCSVLine(line) {
   return cols;
 }
 
+// Map CSV column indices to scoring category keys
+const STAT_COLS = { 10: "FGM", 11: "FGA", 12: "3PTM", 13: "FTM", 14: "FTA", 15: "PTS", 16: "REB", 17: "AST", 18: "ST", 19: "BLK", 20: "TO" };
+// Also check alternate key names the API might return (e.g. "STL" vs "ST")
+const scoringVal = (key) => SCORING[key] ?? SCORING[key === "ST" ? "STL" : key === "STL" ? "ST" : key] ?? 0;
+
 function parseCSV(raw, teamNum) {
   const teamName = TEAM_MAP[teamNum];
   return raw.split("\n").filter(Boolean).map(line => {
     const cols = parseCSVLine(line);
     const s = (i) => parseFloat(cols[i]) || 0;
-    const customFPG = s(10)*2 + s(11)*-1 + s(12)*1 + s(13)*1 + s(14)*-1 + s(15)*1 + s(16)*1 + s(17)*2 + s(18)*4 + s(19)*4 + s(20)*-2;
+    let customFPG = 0;
+    for (const [col, key] of Object.entries(STAT_COLS)) {
+      customFPG += s(parseInt(col)) * scoringVal(key);
+    }
     const gp = s(9);
     return {
       id: cols[0], pos: cols[1], name: cols[2], nbaTeam: cols[3], eligible: cols[4],
@@ -55,7 +67,7 @@ function parseCSV(raw, teamNum) {
       projSeasonFP: Math.round(customFPG * 82),
       fgm: s(10), fga: s(11), threes: s(12), ftm: s(13), fta: s(14),
       pts: s(15), reb: s(16), ast: s(17), stl: s(18), blk: s(19), to: s(20),
-      fgEff: Math.round((s(10) * 2 + s(11) * -1) * 10) / 10,
+      fgEff: Math.round((s(10) * (SCORING.FGM || 2) + s(11) * (SCORING.FGA || -1)) * 10) / 10,
       fantasyTeam: teamName,
     };
   });
@@ -783,7 +795,7 @@ export default function App() {
           <div style={styles.title}>THE GHOLA TERMINAL</div>
         </div>
         <div style={{ color: C.dim, fontSize: 10, textAlign: "right" }}>
-          <div>DATA AS OF: MAR 2026</div>
+          <div>DATA AS OF: {DATA._meta?.lastUpdated ? new Date(DATA._meta.lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase() : "UNKNOWN"}</div>
           <div style={{ color: C.amber }}>MODE: TANK</div>
         </div>
       </div>
