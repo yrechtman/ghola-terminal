@@ -12,7 +12,7 @@ Ideas, feedback, and deferred improvements. Not prioritized — just a running l
 
 ## Features
 
-_(empty for now)_
+- **Manual player tag overrides**: Allow manually setting/overriding tags (IRON, DUR, FRAG, YNG, SELL, etc.) on roster players instead of relying solely on auto-generated tags. Useful for tagging players based on context the algorithm can't see (e.g., marking a player as SELL even if they're young).
 
 ---
 
