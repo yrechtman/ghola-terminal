@@ -5,7 +5,7 @@
       "team": "Big Spite Guys",
       "w": 14,
       "l": 4,
-      "fpFor": 24143,
+      "fpFor": 24150,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -14,7 +14,7 @@
       "team": "cam thomas jefferson",
       "w": 14,
       "l": 4,
-      "fpFor": 22375,
+      "fpFor": 22389,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -23,7 +23,7 @@
       "team": "team hyphen",
       "w": 12,
       "l": 6,
-      "fpFor": 21185,
+      "fpFor": 21218,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -32,7 +32,7 @@
       "team": "The Travel Agency",
       "w": 12,
       "l": 6,
-      "fpFor": 20754,
+      "fpFor": 20771,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -41,7 +41,7 @@
       "team": "RG Kush",
       "w": 12,
       "l": 6,
-      "fpFor": 20119,
+      "fpFor": 20200,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -50,7 +50,7 @@
       "team": "team tall white boi",
       "w": 10,
       "l": 8,
-      "fpFor": 19370,
+      "fpFor": 19378,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -59,7 +59,7 @@
       "team": "Team sugar boo boo",
       "w": 6,
       "l": 12,
-      "fpFor": 18703,
+      "fpFor": 18734,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -68,7 +68,7 @@
       "team": "The Cooper Flaggots",
       "w": 4,
       "l": 14,
-      "fpFor": 16408,
+      "fpFor": 16446,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -86,7 +86,7 @@
       "team": "tleilaxu",
       "w": 2,
       "l": 16,
-      "fpFor": 14788,
+      "fpFor": 14799,
       "fpAgainst": 0,
       "streak": ""
     }
@@ -468,7 +468,7 @@
   "PLAYER_PROPS": {},
   "DYNASTY_ADP": {},
   "_meta": {
-    "lastUpdated": "2026-03-07T22:21:45.658Z",
+    "lastUpdated": "2026-03-07T23:20:52.056Z",
     "leagueId": "i4mue2axmd7ntz13",
     "propsDate": null
   }
