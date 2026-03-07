@@ -29,6 +29,14 @@ const LOTTERY_ODDS = {
 };
 
 const { DRAFT_PICKS, STANDINGS, RAW_CSV } = DATA;
+const PLAYER_PROPS = DATA.PLAYER_PROPS || {};
+const DYNASTY_ADP = DATA.DYNASTY_ADP || {};
+
+function normalizeName(name) {
+  return name.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\./g, "").replace(/\s+/g, " ").trim();
+}
 
 function parseCSVLine(line) {
   const cols = [];
@@ -59,8 +67,12 @@ function parseCSV(raw, teamNum) {
       customFPG += s(parseInt(col)) * scoringVal(key);
     }
     const gp = s(9);
+    const name = cols[2];
+    const props = PLAYER_PROPS[normalizeName(name)] || null;
+    const fantraxId = (cols[0] || "").replace(/^\*|\*$/g, "");
+    const adp = DYNASTY_ADP[fantraxId] ?? null;
     return {
-      id: cols[0], pos: cols[1], name: cols[2], nbaTeam: cols[3], eligible: cols[4],
+      id: cols[0], pos: cols[1], name, nbaTeam: cols[3], eligible: cols[4],
       status: cols[5], age: parseInt(cols[6]) || 0, totalFP: s(7), fantraxFPG: s(8),
       gp, customFPG: Math.round(customFPG * 10) / 10,
       totalCustomFP: Math.round(customFPG * gp),
@@ -69,6 +81,8 @@ function parseCSV(raw, teamNum) {
       pts: s(15), reb: s(16), ast: s(17), stl: s(18), blk: s(19), to: s(20),
       fgEff: Math.round((s(10) * (SCORING.FGM || 2) + s(11) * (SCORING.FGA || -1)) * 10) / 10,
       fantasyTeam: teamName,
+      props,  // today's PrizePicks lines, or null if no game
+      adp,    // dynasty ADP rank, or null if unknown
     };
   });
 }
@@ -144,7 +158,7 @@ const styles = {
 // COMPONENTS
 // ============================================================
 
-function PlayerRow({ p, showTeam = false, highlight = false, tags, onTagClick, onTagAdd }) {
+function PlayerRow({ p, showTeam = false, highlight = false, showProps = false, tags, onTagClick, onTagAdd }) {
   const [picking, setPicking] = useState(false);
   const rowStyle = highlight ? styles.myTeamRow : {};
   const displayTags = tags !== undefined ? tags : getAutoTags(p, highlight);
@@ -201,11 +215,21 @@ function PlayerRow({ p, showTeam = false, highlight = false, tags, onTagClick, o
       <td style={{ ...styles.tdR, color: C.white }}>{p.ast}</td>
       <td style={{ ...styles.tdR, color: p.to > 3 ? C.red : C.dim }}>{p.to}</td>
       <td style={{ ...styles.tdR, color: p.fgEff >= 0 ? C.green : C.red }}>{p.fgEff}</td>
+      {showProps && (
+        <td style={{ ...styles.tdR, color: p.props ? C.cyan : C.dimmer, fontSize: 10, fontWeight: p.props ? 700 : 400 }}>
+          {p.props ? `${p.props.pts ?? "?"}/${p.props.reb ?? "?"}/${p.props.ast ?? "?"}` : "—"}
+        </td>
+      )}
+      {showProps && (
+        <td style={{ ...styles.tdR, color: p.adp != null ? C.white : C.dimmer, fontSize: 10 }}>
+          {p.adp != null ? p.adp : "—"}
+        </td>
+      )}
     </tr>
   );
 }
 
-function TableHeader({ showTeam = false }) {
+function TableHeader({ showTeam = false, showProps = false }) {
   return (
     <thead>
       <tr>
@@ -225,6 +249,8 @@ function TableHeader({ showTeam = false }) {
         <th style={styles.thR}>AST</th>
         <th style={styles.thR}>TO</th>
         <th style={styles.thR}>FG$</th>
+        {showProps && <th style={{ ...styles.thR, color: C.cyan }}>P/R/A</th>}
+        {showProps && <th style={{ ...styles.thR, color: C.cyan }}>ADP</th>}
       </tr>
     </thead>
   );
@@ -289,7 +315,7 @@ function MyRoster() {
 
       <div style={{ overflowX: "auto" }}>
         <table style={styles.table}>
-          <TableHeader />
+          <TableHeader showProps />
           <tbody>
             {[
               { key: "Act", label: "ACTIVE ROSTER" },
@@ -298,8 +324,8 @@ function MyRoster() {
               { key: "Min", label: "MINOR LEAGUE" },
             ].map(({ key, label }) => (
               groups[key].length > 0 && [
-                <tr key={`h-${key}`}><td colSpan={16} style={styles.sectionHeader}>{label} ({groups[key].length})</td></tr>,
-                ...groups[key].map(p => <PlayerRow key={p.id} p={p} highlight tags={getPlayerTags(p)} onTagClick={handleTagClick} onTagAdd={handleTagAdd} />)
+                <tr key={`h-${key}`}><td colSpan={18} style={styles.sectionHeader}>{label} ({groups[key].length})</td></tr>,
+                ...groups[key].map(p => <PlayerRow key={p.id} p={p} highlight showProps tags={getPlayerTags(p)} onTagClick={handleTagClick} onTagAdd={handleTagAdd} />)
               ]
             ))}
           </tbody>
