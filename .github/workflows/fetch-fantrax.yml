@@ -1,0 +1,40 @@
+name: Fetch Fantrax Data
+
+on:
+  schedule:
+    # Every day at 6am UTC (1am EST / 10pm PST)
+    - cron: "0 6 * * *"
+  workflow_dispatch: # Manual trigger from GitHub UI
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - run: npm install -D playwright && npx playwright install chromium --with-deps
+
+      - name: Create credentials file
+        run: |
+          cat > scripts/.env << 'ENVEOF'
+          FANTRAX_EMAIL=${{ secrets.FANTRAX_EMAIL }}
+          FANTRAX_PASSWORD=${{ secrets.FANTRAX_PASSWORD }}
+          ENVEOF
+
+      - name: Fetch data from Fantrax
+        run: npm run fetch-data
+
+      - name: Commit and push if data changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet src/data.json && echo "No changes" && exit 0
+          git add src/data.json
+          git commit -m "Update Fantrax data ($(date -u +%Y-%m-%d))"
+          git push

@@ -11,5 +11,9 @@ Built for offseason roster evaluation, trade analysis, draft capital planning, a
 
 ## Changelog
 
+- 2026-03-07: Add GitHub Actions cron to auto-fetch Fantrax data daily.
+- 2026-03-07: Fully automated Fantrax login — just add credentials to scripts/.env and run.
+- 2026-03-07: Add full Fantrax API transforms for standings, draft picks, and roster composition.
+- 2026-03-07: Extract data to data.json, add Fantrax API fetch script (`npm run fetch-data`).
 - 2026-03-07: Remove subtitle text below header title.
 - 2026-03-06: Initial commit. My Roster, League Landscape, Trade Analyzer, Draft Capital (Monte Carlo lottery sim), Free Agent placeholder.

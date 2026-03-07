@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Fantrax data fetcher secrets and debug output
+scripts/.env
+scripts/.fantrax-cookie
+scripts/.fantrax-auth
+scripts/.fantrax-config.json
+scripts/.debug-*.json
