@@ -11,6 +11,7 @@ Built for offseason roster evaluation, trade analysis, draft capital planning, a
 
 ## Changelog
 
+- 2026-03-07: Add P/R/A prop lines and dynasty ADP columns to My Roster table (from PrizePicks + Fantrax ADP feeds).
 - 2026-03-07: Fix Draft Capital tab — useEffect, own-pick rank bug, DRAFT_PICKS[MY_TEAM] instead of hardcoded key.
 - 2026-03-07: Full legibility audit — all real data columns now white; grey reserved for decoration only.
 - 2026-03-07: Legibility pass (C.dim → #999) + manual player tag overrides on My Roster.
