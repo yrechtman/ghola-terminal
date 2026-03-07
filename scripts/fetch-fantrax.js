@@ -2,19 +2,12 @@
 
 // Fetches league data from the Fantrax API and writes to src/data.json.
 //
-// Setup (once):
-//   1. Create scripts/.env with:
-//        FANTRAX_EMAIL=you@example.com
-//        FANTRAX_PASSWORD=yourpassword
-//   2. npm install -D playwright
-//   3. npx playwright install chromium
+// The league is public — no login required.
 //
 // Usage:
 //   npm run fetch-data
-//
-// That's it. The script logs in automatically, grabs cookies, hits the API.
 
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -23,10 +16,8 @@ const ROOT = join(__dirname, "..");
 
 const LEAGUE_ID = "i4mue2axmd7ntz13";
 const BASE_URL = "https://www.fantrax.com/fxea/general";
-const AUTH_STATE_PATH = join(__dirname, ".fantrax-auth");
-const ENV_PATH = join(__dirname, ".env");
 
-// Fantrax team ID → team name (from getLeagueInfo matchups)
+// Fantrax team ID → team name
 const FANTRAX_TEAM_MAP = {
   "76tybywxmd7ntz1q": "tleilaxu",
   "e9xiok73md7ntz1v": "Light Years Ahead",
@@ -40,7 +31,7 @@ const FANTRAX_TEAM_MAP = {
   "0800ycjzmd7ntz1s": "The Travel Agency",
 };
 
-// App uses numeric team IDs (2-11) for RAW_CSV keys. Map team name → numeric ID.
+// App uses numeric team IDs (2-11) for RAW_CSV keys
 const TEAM_NAME_TO_NUM = {
   "tleilaxu": 2, "Light Years Ahead": 3, "RG Kush": 4,
   "Team sugar boo boo": 5, "cam thomas jefferson": 6, "team tall white boi": 7,
@@ -48,150 +39,17 @@ const TEAM_NAME_TO_NUM = {
 };
 
 // ============================================================
-// AUTH: Fully automated Playwright login
-// ============================================================
-
-function loadEnv() {
-  if (!existsSync(ENV_PATH)) {
-    console.error("ERROR: No credentials found at scripts/.env");
-    console.error("");
-    console.error("Create scripts/.env with:");
-    console.error("  FANTRAX_EMAIL=you@example.com");
-    console.error("  FANTRAX_PASSWORD=yourpassword");
-    process.exit(1);
-  }
-  const env = {};
-  for (const line of readFileSync(ENV_PATH, "utf8").split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq > 0) env[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
-  }
-  if (!env.FANTRAX_EMAIL || !env.FANTRAX_PASSWORD) {
-    console.error("ERROR: scripts/.env must contain FANTRAX_EMAIL and FANTRAX_PASSWORD");
-    process.exit(1);
-  }
-  return env;
-}
-
-async function loginAndGetCookies() {
-  let chromium;
-  try {
-    ({ chromium } = await import("playwright"));
-  } catch {
-    console.error("ERROR: Playwright not installed. Run:");
-    console.error("  npm install -D playwright");
-    console.error("  npx playwright install chromium");
-    process.exit(1);
-  }
-
-  const hasAuth = existsSync(AUTH_STATE_PATH);
-
-  // Try reusing saved session first
-  if (hasAuth) {
-    console.log("  Reusing saved session...");
-    const browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({ storageState: AUTH_STATE_PATH });
-    const page = await context.newPage();
-
-    try {
-      const resp = await page.goto("https://www.fantrax.com/fantasy/league/" + LEAGUE_ID + "/home", {
-        waitUntil: "domcontentloaded",
-        timeout: 20000,
-      });
-      // If we didn't get redirected to login, session is still good
-      const finalUrl = page.url();
-      if (!finalUrl.includes("/login") && resp && resp.ok()) {
-        const cookies = await context.cookies("https://www.fantrax.com");
-        await browser.close();
-        if (cookies.length > 0) {
-          console.log("  Session still valid.");
-          return cookies.map(c => `${c.name}=${c.value}`).join("; ");
-        }
-      }
-    } catch {
-      // Session expired or page failed, fall through to fresh login
-    }
-    await browser.close();
-    console.log("  Saved session expired, logging in fresh...");
-  }
-
-  // Fresh login with credentials
-  const { FANTRAX_EMAIL, FANTRAX_PASSWORD } = loadEnv();
-  console.log(`  Logging into Fantrax as ${FANTRAX_EMAIL}...`);
-
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-  });
-  const page = await context.newPage();
-
-  await page.goto("https://www.fantrax.com/login", { waitUntil: "domcontentloaded", timeout: 30000 });
-
-  // Fill in the login form
-  await page.fill('input[name="email"], input[type="email"], #mat-input-0', FANTRAX_EMAIL);
-  await page.fill('input[name="password"], input[type="password"], #mat-input-1', FANTRAX_PASSWORD);
-  await page.click('button[type="submit"], button:has-text("Login"), .login-btn');
-
-  // Wait for navigation after login
-  try {
-    await page.waitForURL("**/fantasy/**", { timeout: 15000 });
-  } catch {
-    // Check if we're still on login (bad credentials or CAPTCHA)
-    const currentUrl = page.url();
-    if (currentUrl.includes("/login")) {
-      await browser.close();
-      console.error("ERROR: Login failed. Check your credentials in scripts/.env");
-      console.error("If Fantrax is showing a CAPTCHA, you may need to log in manually first.");
-      process.exit(1);
-    }
-    // Otherwise we might be on a different page, continue
-  }
-
-  // Save session for reuse
-  await context.storageState({ path: AUTH_STATE_PATH });
-  console.log("  Login successful, session saved.");
-
-  const cookies = await context.cookies("https://www.fantrax.com");
-  await browser.close();
-
-  if (!cookies.length) {
-    console.error("ERROR: No cookies after login. Something went wrong.");
-    process.exit(1);
-  }
-
-  return cookies.map(c => `${c.name}=${c.value}`).join("; ");
-}
-
-async function getCookie() {
-  // Try file-based cookie first (faster, no browser needed)
-  const cookiePath = join(__dirname, ".fantrax-cookie");
-  if (existsSync(cookiePath)) {
-    console.log("  Using cookie from scripts/.fantrax-cookie");
-    return readFileSync(cookiePath, "utf8").trim();
-  }
-
-  // Automated Playwright login
-  return loginAndGetCookies();
-}
-
-// ============================================================
 // API FETCHING
 // ============================================================
-
-let _cookie = null;
 
 async function fantraxFetch(endpoint, params = {}) {
   const url = new URL(`${BASE_URL}/${endpoint}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
 
-  if (!_cookie) _cookie = await getCookie();
-
   let res;
   try {
     res = await fetch(url.toString(), {
       headers: {
-        "Cookie": _cookie,
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
       },
     });
@@ -270,11 +128,10 @@ function transformRosters(rostersRaw, playerIdsRaw, existingCsv) {
 
   // Parse existing CSV to build a lookup by player ID → stat line
   const existingStats = {};
-  for (const [teamNum, csv] of Object.entries(existingCsv)) {
+  for (const [, csv] of Object.entries(existingCsv)) {
     for (const line of csv.split("\n").filter(Boolean)) {
       const match = line.match(/^\*([^*]+)\*/);
       if (!match) {
-        // Try quoted format: "*ID*"
         const qMatch = line.match(/^"?\*([^*]+)\*"?/);
         if (qMatch) existingStats[qMatch[1]] = line;
       } else {
@@ -382,8 +239,8 @@ async function main() {
     console.error("FETCH FAILED:", err.message);
     console.error("");
     if (err.message.includes("403") || err.message.includes("401")) {
-      console.error("Auth failed. The script will auto-login on next run.");
-      console.error("If it keeps failing, check your credentials in scripts/.env");
+      console.error("Got an auth error even though the league is public.");
+      console.error("Make sure the league visibility is set to 'Public' in Fantrax league settings.");
     }
     console.error("");
     console.error("Existing data.json was NOT modified.");
