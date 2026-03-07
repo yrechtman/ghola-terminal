@@ -2,15 +2,17 @@
 
 // Fetches league data from the Fantrax API and writes to src/data.json.
 //
+// Setup (once):
+//   1. Create scripts/.env with:
+//        FANTRAX_EMAIL=you@example.com
+//        FANTRAX_PASSWORD=yourpassword
+//   2. npm install -D playwright
+//   3. npx playwright install chromium
+//
 // Usage:
 //   npm run fetch-data
 //
-// First-time setup:
-//   npm run fetch-data --setup
-//   (Opens a browser to log into Fantrax and saves session for reuse)
-//
-// Subsequent runs just use the saved session:
-//   npm run fetch-data
+// That's it. The script logs in automatically, grabs cookies, hits the API.
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
@@ -22,6 +24,7 @@ const ROOT = join(__dirname, "..");
 const LEAGUE_ID = "i4mue2axmd7ntz13";
 const BASE_URL = "https://www.fantrax.com/fxea/general";
 const AUTH_STATE_PATH = join(__dirname, ".fantrax-auth");
+const ENV_PATH = join(__dirname, ".env");
 
 // Fantrax team ID → team name (from getLeagueInfo matchups)
 const FANTRAX_TEAM_MAP = {
@@ -45,10 +48,33 @@ const TEAM_NAME_TO_NUM = {
 };
 
 // ============================================================
-// AUTH: Playwright-based login with saved session
+// AUTH: Fully automated Playwright login
 // ============================================================
 
-async function getPlaywrightCookies() {
+function loadEnv() {
+  if (!existsSync(ENV_PATH)) {
+    console.error("ERROR: No credentials found at scripts/.env");
+    console.error("");
+    console.error("Create scripts/.env with:");
+    console.error("  FANTRAX_EMAIL=you@example.com");
+    console.error("  FANTRAX_PASSWORD=yourpassword");
+    process.exit(1);
+  }
+  const env = {};
+  for (const line of readFileSync(ENV_PATH, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq > 0) env[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
+  }
+  if (!env.FANTRAX_EMAIL || !env.FANTRAX_PASSWORD) {
+    console.error("ERROR: scripts/.env must contain FANTRAX_EMAIL and FANTRAX_PASSWORD");
+    process.exit(1);
+  }
+  return env;
+}
+
+async function loginAndGetCookies() {
   let chromium;
   try {
     ({ chromium } = await import("playwright"));
@@ -59,86 +85,94 @@ async function getPlaywrightCookies() {
     process.exit(1);
   }
 
-  const isSetup = process.argv.includes("--setup");
   const hasAuth = existsSync(AUTH_STATE_PATH);
 
-  if (!hasAuth && !isSetup) {
-    console.log("No saved session found. Running first-time login...");
-    console.log("A browser window will open — log into Fantrax, then close it.");
-    console.log("");
-  }
-
-  if (isSetup || !hasAuth) {
-    // Interactive login: open visible browser, let user log in
-    console.log("Opening browser for Fantrax login...");
-    const browser = await chromium.launch({ headless: false });
-    const context = await browser.newContext();
+  // Try reusing saved session first
+  if (hasAuth) {
+    console.log("  Reusing saved session...");
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({ storageState: AUTH_STATE_PATH });
     const page = await context.newPage();
 
-    await page.goto("https://www.fantrax.com/login");
-    console.log("Log into Fantrax in the browser window.");
-    console.log("Once you see your league page, press Enter here to continue...");
-
-    // Wait for user to press Enter
-    await new Promise(resolve => {
-      process.stdin.setRawMode?.(false);
-      process.stdin.resume();
-      process.stdin.once("data", resolve);
-    });
-
-    // Save the auth state (cookies + localStorage)
-    await context.storageState({ path: AUTH_STATE_PATH });
+    try {
+      const resp = await page.goto("https://www.fantrax.com/fantasy/league/" + LEAGUE_ID + "/home", {
+        waitUntil: "domcontentloaded",
+        timeout: 20000,
+      });
+      // If we didn't get redirected to login, session is still good
+      const finalUrl = page.url();
+      if (!finalUrl.includes("/login") && resp && resp.ok()) {
+        const cookies = await context.cookies("https://www.fantrax.com");
+        await browser.close();
+        if (cookies.length > 0) {
+          console.log("  Session still valid.");
+          return cookies.map(c => `${c.name}=${c.value}`).join("; ");
+        }
+      }
+    } catch {
+      // Session expired or page failed, fall through to fresh login
+    }
     await browser.close();
-    console.log("Session saved to scripts/.fantrax-auth");
-    console.log("");
+    console.log("  Saved session expired, logging in fresh...");
   }
 
-  // Load saved session and extract cookies
+  // Fresh login with credentials
+  const { FANTRAX_EMAIL, FANTRAX_PASSWORD } = loadEnv();
+  console.log(`  Logging into Fantrax as ${FANTRAX_EMAIL}...`);
+
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ storageState: AUTH_STATE_PATH });
-
-  // Navigate to Fantrax to ensure cookies are fresh / activate the session
+  const context = await browser.newContext({
+    userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  });
   const page = await context.newPage();
+
+  await page.goto("https://www.fantrax.com/login", { waitUntil: "domcontentloaded", timeout: 30000 });
+
+  // Fill in the login form
+  await page.fill('input[name="email"], input[type="email"], #mat-input-0', FANTRAX_EMAIL);
+  await page.fill('input[name="password"], input[type="password"], #mat-input-1', FANTRAX_PASSWORD);
+  await page.click('button[type="submit"], button:has-text("Login"), .login-btn');
+
+  // Wait for navigation after login
   try {
-    await page.goto("https://www.fantrax.com/fantasy/league/" + LEAGUE_ID + "/home", {
-      waitUntil: "networkidle",
-      timeout: 30000,
-    });
+    await page.waitForURL("**/fantasy/**", { timeout: 15000 });
   } catch {
-    // Timeout is OK — we just need the cookies from the redirect chain
+    // Check if we're still on login (bad credentials or CAPTCHA)
+    const currentUrl = page.url();
+    if (currentUrl.includes("/login")) {
+      await browser.close();
+      console.error("ERROR: Login failed. Check your credentials in scripts/.env");
+      console.error("If Fantrax is showing a CAPTCHA, you may need to log in manually first.");
+      process.exit(1);
+    }
+    // Otherwise we might be on a different page, continue
   }
+
+  // Save session for reuse
+  await context.storageState({ path: AUTH_STATE_PATH });
+  console.log("  Login successful, session saved.");
 
   const cookies = await context.cookies("https://www.fantrax.com");
   await browser.close();
 
   if (!cookies.length) {
-    console.error("ERROR: No cookies captured. Session may have expired.");
-    console.error("Run: npm run fetch-data -- --setup");
+    console.error("ERROR: No cookies after login. Something went wrong.");
     process.exit(1);
   }
 
-  // Format as Cookie header string
   return cookies.map(c => `${c.name}=${c.value}`).join("; ");
-}
-
-// Fallback: read cookie from file (old method)
-function getFileCookie() {
-  const cookiePath = join(__dirname, ".fantrax-cookie");
-  if (!existsSync(cookiePath)) return null;
-  return readFileSync(cookiePath, "utf8").trim();
 }
 
 async function getCookie() {
   // Try file-based cookie first (faster, no browser needed)
-  const fileCookie = getFileCookie();
-  if (fileCookie) {
+  const cookiePath = join(__dirname, ".fantrax-cookie");
+  if (existsSync(cookiePath)) {
     console.log("  Using cookie from scripts/.fantrax-cookie");
-    return fileCookie;
+    return readFileSync(cookiePath, "utf8").trim();
   }
 
-  // Fall back to Playwright
-  console.log("  Using Playwright for authentication...");
-  return getPlaywrightCookies();
+  // Automated Playwright login
+  return loginAndGetCookies();
 }
 
 // ============================================================
@@ -347,9 +381,9 @@ async function main() {
     console.error("");
     console.error("FETCH FAILED:", err.message);
     console.error("");
-    if (err.message.includes("403") || err.message.includes("quote")) {
-      console.error("Cookie/session expired. Re-run with --setup to log in again:");
-      console.error("  npm run fetch-data -- --setup");
+    if (err.message.includes("403") || err.message.includes("401")) {
+      console.error("Auth failed. The script will auto-login on next run.");
+      console.error("If it keeps failing, check your credentials in scripts/.env");
     }
     console.error("");
     console.error("Existing data.json was NOT modified.");
