@@ -2,6 +2,8 @@
 
 Ideas, feedback, and deferred improvements. Not prioritized — just a running log.
 
+Once we complete something from this list, remove it as a final step to keep the roadmap up to date.
+
 ---
 
 ## UI / Aesthetics
