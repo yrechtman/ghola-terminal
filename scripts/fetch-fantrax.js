@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 
-// Fetches league data from the Fantrax API and writes to src/data.json.
+// Fetches league data from the Fantrax API and supplemental data from external
+// sources, then writes everything to src/data.json.
 //
-// The league is public — no login required.
+// External sources (all free, no auth required):
+//   - PrizePicks: NBA player prop lines for today's games
+//   - Fantrax getAdp: Dynasty ADP from within the platform
 //
 // Usage:
 //   npm run fetch-data
 
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -16,6 +19,7 @@ const ROOT = join(__dirname, "..");
 
 const LEAGUE_ID = "i4mue2axmd7ntz13";
 const BASE_URL = "https://www.fantrax.com/fxea/general";
+const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 // ============================================================
 // API FETCHING
@@ -27,11 +31,7 @@ async function fantraxFetch(endpoint, params = {}) {
 
   let res;
   try {
-    res = await fetch(url.toString(), {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-      },
-    });
+    res = await fetch(url.toString(), { headers: { "User-Agent": BROWSER_UA } });
   } catch (err) {
     throw new Error(`${endpoint}: network error (${err.cause?.code || err.message}). Is fantrax.com reachable?`);
   }
@@ -44,11 +44,90 @@ async function fantraxFetch(endpoint, params = {}) {
   return res.json();
 }
 
+// Fetch PrizePicks NBA prop lines — no auth required.
+// Returns { [normalizedPlayerName]: { pts, reb, ast, threes, blk, stl, to, ftm, team, gameTime } }
+async function fetchPrizePicks() {
+  const STAT_MAP = {
+    "Points": "pts", "Rebounds": "reb", "Assists": "ast",
+    "3-Pointers Made": "threes", "Blocked Shots": "blk",
+    "Steals": "stl", "Turnovers": "to", "Free Throws Made": "ftm",
+  };
+
+  let raw;
+  try {
+    const res = await fetch("https://api.prizepicks.com/projections?league_id=7&per_page=1000", {
+      headers: { "User-Agent": BROWSER_UA, "Accept": "application/json" },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    raw = await res.json();
+  } catch (err) {
+    console.warn(`  PrizePicks fetch failed (${err.message}) — skipping player props`);
+    return {};
+  }
+
+  // Build player ID → { name, team } from the "included" sideload
+  const playerMeta = {};
+  for (const item of (raw.included || [])) {
+    if (item.type === "new_player") {
+      playerMeta[item.id] = { name: item.attributes.name, team: item.attributes.team };
+    }
+  }
+
+  // Accumulate lines per player
+  const props = {};
+  for (const proj of (raw.data || [])) {
+    const playerId = proj.relationships?.new_player?.data?.id;
+    if (!playerId) continue;
+    const meta = playerMeta[playerId];
+    if (!meta) continue;
+
+    const statKey = STAT_MAP[proj.attributes.stat_type];
+    if (!statKey) continue;
+
+    const key = normalizeName(meta.name);
+    if (!props[key]) props[key] = { name: meta.name, team: meta.team, gameTime: null };
+    props[key][statKey] = proj.attributes.line_score;
+    if (!props[key].gameTime && proj.attributes.start_time) {
+      props[key].gameTime = proj.attributes.start_time;
+    }
+  }
+
+  return props;
+}
+
+// Fetch Fantrax dynasty ADP. Returns { [fantraxPlayerId]: adpRank } or {}
+async function fetchFantraxAdp() {
+  try {
+    const raw = await fantraxFetch("getAdp", { leagueId: LEAGUE_ID, sport: "NBA" });
+    const adp = {};
+    const players = raw.players || raw.adpPlayers || raw.adpData || [];
+    for (const p of Array.isArray(players) ? players : []) {
+      if (p.id && p.adp != null) adp[p.id] = p.adp;
+    }
+    // Try alternate response shape (object keyed by player ID)
+    if (Object.keys(adp).length === 0 && typeof raw === "object" && !Array.isArray(raw)) {
+      for (const [id, data] of Object.entries(raw)) {
+        if (typeof data === "object" && data?.adp != null) adp[id] = data.adp;
+      }
+    }
+    return adp;
+  } catch (err) {
+    console.warn(`  Fantrax ADP fetch failed (${err.message}) — skipping dynasty ADP`);
+    return {};
+  }
+}
+
+function normalizeName(name) {
+  return name.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")  // strip diacritics
+    .replace(/\./g, "")                                   // Jr. → Jr
+    .replace(/\s+/g, " ").trim();
+}
+
 // ============================================================
 // TRANSFORMS
 // ============================================================
 
-// Build team ID → name map from getLeagueInfo response
 function buildTeamMap(leagueInfoRaw) {
   const teamMap = {};
   if (leagueInfoRaw.teamInfo) {
@@ -59,11 +138,9 @@ function buildTeamMap(leagueInfoRaw) {
   return teamMap;
 }
 
-// Extract scoring weights from getLeagueInfo response
 function extractScoring(leagueInfoRaw) {
   const scoring = {};
   if (!leagueInfoRaw.scoringSystem?.scoringCategorySettings) return scoring;
-
   for (const group of leagueInfoRaw.scoringSystem.scoringCategorySettings) {
     for (const config of group.configs || []) {
       if (config.points !== undefined && config.scoringCategory) {
@@ -75,7 +152,6 @@ function extractScoring(leagueInfoRaw) {
   return scoring;
 }
 
-// Extract league metadata from getLeagueInfo
 function extractLeagueInfo(leagueInfoRaw, teamMap) {
   const info = {
     leagueName: leagueInfoRaw.leagueName || "The Bene Gessirit",
@@ -84,14 +160,12 @@ function extractLeagueInfo(leagueInfoRaw, teamMap) {
     rosterInfo: null,
   };
 
-  // Build teams object: fantraxId → { name, id (numeric) }
   let numericId = 2;
   for (const [fantraxId, name] of Object.entries(teamMap)) {
     info.teams[fantraxId] = { name, numericId };
     numericId++;
   }
 
-  // Roster constraints
   if (leagueInfoRaw.rosterInfo) {
     info.rosterInfo = {
       maxTotalPlayers: leagueInfoRaw.rosterInfo.maxTotalPlayers,
@@ -123,16 +197,12 @@ function transformDraftPicks(raw, teamMap) {
   Object.values(teamMap).forEach(name => { picks[name] = []; });
 
   const futurePicks = raw.futureDraftPicks.filter(p => p.year === 2026);
-
   for (const pick of futurePicks) {
     const ownerName = teamMap[pick.currentOwnerTeamId];
     const originalName = teamMap[pick.originalOwnerTeamId];
     if (!ownerName || !originalName) continue;
-
     const entry = { round: pick.round };
-    if (ownerName !== originalName) {
-      entry.from = originalName;
-    }
+    if (ownerName !== originalName) entry.from = originalName;
     picks[ownerName].push(entry);
   }
 
@@ -160,7 +230,6 @@ function transformRosters(rostersRaw, playerIdsRaw, existingCsv, leagueInfo) {
   const statusMap = { ACTIVE: "Act", RESERVE: "Res", INJURED_RESERVE: "IR", MINORS: "Min" };
   const newCsv = {};
 
-  // Parse existing CSV to build a lookup by player ID → stat line
   const existingStats = {};
   for (const [, csv] of Object.entries(existingCsv)) {
     for (const line of csv.split("\n").filter(Boolean)) {
@@ -197,7 +266,6 @@ function transformRosters(rostersRaw, playerIdsRaw, existingCsv, leagueInfo) {
           else current += ch;
         }
         fields.push(current.trim());
-
         fields[1] = pos || fields[1];
         fields[5] = status;
         lines.push(fields.map(f => `"${f}"`).join(","));
@@ -224,7 +292,7 @@ async function main() {
   const existingData = JSON.parse(readFileSync(join(ROOT, "src/data.json"), "utf8"));
 
   try {
-    console.log("Fetching data from Fantrax API...");
+    console.log("Fetching Fantrax data...");
     const [standingsRaw, rostersRaw, draftPicksRaw, playerIdsRaw, leagueInfoRaw] = await Promise.all([
       fantraxFetch("getStandings", { leagueId: LEAGUE_ID }),
       fantraxFetch("getTeamRosters", { leagueId: LEAGUE_ID }),
@@ -233,17 +301,24 @@ async function main() {
       fantraxFetch("getLeagueInfo", { leagueId: LEAGUE_ID }),
     ]);
 
+    console.log("Fetching supplemental data (PrizePicks props, Fantrax ADP)...");
+    const [playerProps, dynastyAdp] = await Promise.all([
+      fetchPrizePicks(),
+      fetchFantraxAdp(),
+    ]);
+
     writeFileSync(join(__dirname, ".debug-standings.json"), JSON.stringify(standingsRaw, null, 2));
     writeFileSync(join(__dirname, ".debug-rosters.json"), JSON.stringify(rostersRaw, null, 2));
     writeFileSync(join(__dirname, ".debug-draftpicks.json"), JSON.stringify(draftPicksRaw, null, 2));
-    writeFileSync(join(__dirname, ".debug-playerids.json"), JSON.stringify(playerIdsRaw, null, 2));
     writeFileSync(join(__dirname, ".debug-leagueinfo.json"), JSON.stringify(leagueInfoRaw, null, 2));
+    if (Object.keys(playerProps).length > 0) {
+      writeFileSync(join(__dirname, ".debug-prizepicks.json"), JSON.stringify(playerProps, null, 2));
+    }
     console.log("  Raw responses saved to scripts/.debug-*.json");
     console.log("");
 
     console.log("Transforming data...");
 
-    // Build team map from league info (no more hardcoded team names)
     const teamMap = buildTeamMap(leagueInfoRaw);
     console.log(`  Teams: ${Object.keys(teamMap).length} teams from league info`);
 
@@ -262,7 +337,11 @@ async function main() {
     const totalPlayers = Object.values(rawCsv).reduce((sum, csv) => sum + csv.split("\n").filter(Boolean).length, 0);
     console.log(`  Rosters: ${totalPlayers} players across ${Object.keys(rawCsv).length} teams`);
 
-    // Build TEAM_MAP (numericId → name) for the app
+    const propsCount = Object.keys(playerProps).length;
+    const adpCount = Object.keys(dynastyAdp).length;
+    console.log(`  PrizePicks: ${propsCount} players with lines today`);
+    console.log(`  Dynasty ADP: ${adpCount} players`);
+
     const appTeamMap = {};
     for (const { name, numericId } of Object.values(leagueInfo.teams)) {
       appTeamMap[numericId] = name;
@@ -278,9 +357,15 @@ async function main() {
         scoring: leagueInfo.scoring,
         rosterInfo: leagueInfo.rosterInfo,
       },
+      // PrizePicks prop lines for today's games. Key = normalized player name.
+      // Shape: { pts, reb, ast, threes, blk, stl, to, ftm, team, gameTime }
+      PLAYER_PROPS: playerProps,
+      // Fantrax dynasty ADP. Key = Fantrax player ID. Value = ADP rank.
+      DYNASTY_ADP: dynastyAdp,
       _meta: {
         lastUpdated: new Date().toISOString(),
         leagueId: LEAGUE_ID,
+        propsDate: propsCount > 0 ? new Date().toDateString() : null,
       },
     };
 
@@ -294,8 +379,7 @@ async function main() {
     console.error("FETCH FAILED:", err.message);
     console.error("");
     if (err.message.includes("403") || err.message.includes("401")) {
-      console.error("Got an auth error even though the league is public.");
-      console.error("Make sure the league visibility is set to 'Public' in Fantrax league settings.");
+      console.error("Got an auth error. Make sure the league visibility is set to 'Public' in Fantrax.");
     }
     console.error("");
     console.error("Existing data.json was NOT modified.");
