@@ -5,7 +5,7 @@
       "team": "Big Spite Guys",
       "w": 14,
       "l": 4,
-      "fpFor": 24197,
+      "fpFor": 24252,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -23,7 +23,7 @@
       "team": "team hyphen",
       "w": 12,
       "l": 6,
-      "fpFor": 21257,
+      "fpFor": 21311,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -50,7 +50,7 @@
       "team": "team tall white boi",
       "w": 10,
       "l": 8,
-      "fpFor": 19411,
+      "fpFor": 19452,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -77,7 +77,7 @@
       "team": "Light Years Ahead",
       "w": 4,
       "l": 14,
-      "fpFor": 15442,
+      "fpFor": 15487,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -468,7 +468,7 @@
   "PLAYER_PROPS": {},
   "DYNASTY_ADP": {},
   "_meta": {
-    "lastUpdated": "2026-03-08T13:35:32.014Z",
+    "lastUpdated": "2026-03-08T19:29:23.988Z",
     "leagueId": "i4mue2axmd7ntz13",
     "propsDate": null
   }
