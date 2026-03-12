@@ -14,7 +14,7 @@
       "team": "cam thomas jefferson",
       "w": 15,
       "l": 4,
-      "fpFor": 23284,
+      "fpFor": 23291,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -23,7 +23,7 @@
       "team": "The Travel Agency",
       "w": 13,
       "l": 6,
-      "fpFor": 21554,
+      "fpFor": 21562,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -32,7 +32,7 @@
       "team": "team hyphen",
       "w": 12,
       "l": 7,
-      "fpFor": 21892,
+      "fpFor": 21909,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -41,7 +41,7 @@
       "team": "RG Kush",
       "w": 12,
       "l": 7,
-      "fpFor": 20954,
+      "fpFor": 20963,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -59,7 +59,7 @@
       "team": "Team sugar boo boo",
       "w": 7,
       "l": 12,
-      "fpFor": 19380,
+      "fpFor": 19412,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -77,7 +77,7 @@
       "team": "The Cooper Flaggots",
       "w": 4,
       "l": 15,
-      "fpFor": 16985,
+      "fpFor": 16992,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -468,7 +468,7 @@
   "PLAYER_PROPS": {},
   "DYNASTY_ADP": {},
   "_meta": {
-    "lastUpdated": "2026-03-12T19:45:00.499Z",
+    "lastUpdated": "2026-03-12T23:26:13.207Z",
     "leagueId": "i4mue2axmd7ntz13",
     "propsDate": null
   }
