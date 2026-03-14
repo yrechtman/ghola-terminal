@@ -14,7 +14,7 @@
       "team": "cam thomas jefferson",
       "w": 15,
       "l": 4,
-      "fpFor": 23738,
+      "fpFor": 23742,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -23,7 +23,7 @@
       "team": "The Travel Agency",
       "w": 13,
       "l": 6,
-      "fpFor": 21911,
+      "fpFor": 21953,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -41,7 +41,7 @@
       "team": "RG Kush",
       "w": 12,
       "l": 7,
-      "fpFor": 21308,
+      "fpFor": 21364,
       "fpAgainst": 0,
       "streak": ""
     },
@@ -86,7 +86,7 @@
       "team": "tleilaxu",
       "w": 2,
       "l": 17,
-      "fpFor": 15503,
+      "fpFor": 15509,
       "fpAgainst": 0,
       "streak": ""
     }
@@ -468,7 +468,7 @@
   "PLAYER_PROPS": {},
   "DYNASTY_ADP": {},
   "_meta": {
-    "lastUpdated": "2026-03-14T13:40:31.233Z",
+    "lastUpdated": "2026-03-14T19:33:25.296Z",
     "leagueId": "i4mue2axmd7ntz13",
     "propsDate": null
   }
