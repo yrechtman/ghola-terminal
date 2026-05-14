@@ -465,11 +465,370 @@
       "maxReservePlayers": 5
     }
   },
-  "PLAYER_PROPS": {},
+  "PLAYER_PROPS": {
+    "cade cunningham": {
+      "name": "Cade Cunningham",
+      "team": "DET",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 22.5,
+      "ast": 6.5,
+      "reb": 3.5,
+      "ftm": 6.5,
+      "stl": 0.5,
+      "blk": 0.5
+    },
+    "donovan mitchell": {
+      "name": "Donovan Mitchell",
+      "team": "CLE",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 22.5,
+      "reb": 2.5,
+      "ast": 2.5,
+      "ftm": 6,
+      "stl": 0.5,
+      "to": 2.5,
+      "blk": 0.5
+    },
+    "james harden": {
+      "name": "James Harden",
+      "team": "CLE",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 14.5,
+      "ast": 4.5,
+      "reb": 3.5,
+      "to": 3.5,
+      "stl": 0.5,
+      "blk": 0.5
+    },
+    "tobias harris": {
+      "name": "Tobias Harris",
+      "team": "DET",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 14.5,
+      "reb": 4.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "ftm": 2.5,
+      "to": 1.5,
+      "blk": 1.5
+    },
+    "duncan robinson": {
+      "name": "Duncan Robinson",
+      "team": "DET",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 7.5,
+      "reb": 1.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "blk": 0.5,
+      "to": 0.5
+    },
+    "evan mobley": {
+      "name": "Evan Mobley",
+      "team": "CLE",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 10.5,
+      "reb": 5.5,
+      "ast": 2.5,
+      "blk": 1.5,
+      "stl": 0.5,
+      "ftm": 2.5,
+      "to": 1.5
+    },
+    "jalen duren": {
+      "name": "Jalen Duren",
+      "team": "DET",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 7.5,
+      "reb": 6.5,
+      "ast": 0.5,
+      "ftm": 2.5,
+      "blk": 0.5,
+      "to": 1.5,
+      "stl": 1.5
+    },
+    "jarrett allen": {
+      "name": "Jarrett Allen",
+      "team": "CLE",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 7.5,
+      "reb": 4.5,
+      "blk": 0.5,
+      "ast": 0.5,
+      "ftm": 2.5,
+      "stl": 0.5,
+      "to": 1.5
+    },
+    "ausar thompson": {
+      "name": "Ausar Thompson",
+      "team": "DET",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 4.5,
+      "reb": 4.5,
+      "ast": 1.5,
+      "stl": 1.5,
+      "blk": 0.5,
+      "to": 1.5
+    },
+    "caris levert": {
+      "name": "Caris LeVert",
+      "team": "DET",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 3.5,
+      "reb": 1.5,
+      "ast": 1.5
+    },
+    "daniss jenkins": {
+      "name": "Daniss Jenkins",
+      "team": "DET",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 4.5,
+      "ast": 1.5,
+      "reb": 1.5,
+      "to": 1.5,
+      "stl": 0.5,
+      "ftm": 1.5
+    },
+    "max strus": {
+      "name": "Max Strus",
+      "team": "CLE",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 4.5,
+      "reb": 2.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "ftm": 0.5,
+      "to": 0.5
+    },
+    "dennis schroder": {
+      "name": "Dennis Schröder",
+      "team": "CLE",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 2.5,
+      "ast": 1.5,
+      "reb": 0.5,
+      "to": 1.5,
+      "stl": 0.5
+    },
+    "sam merrill": {
+      "name": "Sam Merrill",
+      "team": "CLE",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 2.5,
+      "stl": 0.5,
+      "to": 0.5
+    },
+    "dean wade": {
+      "name": "Dean Wade",
+      "team": "CLE",
+      "gameTime": "2026-05-15T19:10:00.000-04:00",
+      "pts": 0.5,
+      "reb": 1.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "to": 0.5,
+      "blk": 0.5
+    },
+    "anthony edwards": {
+      "name": "Anthony Edwards",
+      "team": "MIN",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 19.5,
+      "reb": 3.5,
+      "ast": 2.5,
+      "ftm": 6,
+      "to": 3.5,
+      "stl": 0.5,
+      "blk": 1.5
+    },
+    "victor wembanyama": {
+      "name": "Victor Wembanyama",
+      "team": "SAS",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 21.5,
+      "reb": 10.5,
+      "ftm": 7,
+      "blk": 2.5,
+      "ast": 1.5,
+      "stl": 0.5
+    },
+    "de'aaron fox": {
+      "name": "De'Aaron Fox",
+      "team": "SAS",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 11.5,
+      "ast": 3.5,
+      "reb": 2.5,
+      "ftm": 3.5,
+      "stl": 0.5,
+      "to": 2.5,
+      "blk": 0.5
+    },
+    "julius randle": {
+      "name": "Julius Randle",
+      "team": "MIN",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 11.5,
+      "reb": 4.5,
+      "ast": 2.5,
+      "ftm": 3.5,
+      "stl": 0.5,
+      "to": 2.5,
+      "blk": 0.5
+    },
+    "stephon castle": {
+      "name": "Stephon Castle",
+      "team": "SAS",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 11.5,
+      "ast": 4.5,
+      "reb": 3.5,
+      "ftm": 4,
+      "to": 3.5,
+      "stl": 0.5,
+      "blk": 0.5
+    },
+    "jaden mcdaniels": {
+      "name": "Jaden McDaniels",
+      "team": "MIN",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 10.5,
+      "reb": 3.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "ftm": 1.5,
+      "blk": 1.5,
+      "to": 1.5
+    },
+    "ayo dosunmu": {
+      "name": "Ayo Dosunmu",
+      "team": "MIN",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 8.5,
+      "ast": 2.5,
+      "reb": 1.5,
+      "stl": 0.5,
+      "to": 1.5,
+      "ftm": 1.5,
+      "blk": 0.5
+    },
+    "devin vassell": {
+      "name": "Devin Vassell",
+      "team": "SAS",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 7.5,
+      "reb": 2.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "ftm": 1.5,
+      "blk": 0.5,
+      "to": 0.5
+    },
+    "naz reid": {
+      "name": "Naz Reid",
+      "team": "MIN",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 7.5,
+      "reb": 4.5,
+      "ast": 1.5,
+      "blk": 1.5,
+      "stl": 1.5,
+      "to": 1.5,
+      "ftm": 1.5
+    },
+    "dylan harper": {
+      "name": "Dylan Harper",
+      "team": "SAS",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 6.5,
+      "reb": 2.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "ftm": 1.5,
+      "blk": 0.5
+    },
+    "keldon johnson": {
+      "name": "Keldon Johnson",
+      "team": "SAS",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 4.5,
+      "reb": 2.5,
+      "ast": 0.5,
+      "stl": 0.5,
+      "blk": 0.5,
+      "to": 0.5
+    },
+    "julian champagnie": {
+      "name": "Julian Champagnie",
+      "team": "SAS",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 4.5,
+      "reb": 3.5,
+      "ast": 0.5,
+      "stl": 0.5,
+      "blk": 0.5,
+      "ftm": 0.5
+    },
+    "terrence shannon": {
+      "name": "Terrence Shannon",
+      "team": "MIN",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 3.5,
+      "reb": 1.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "to": 0.5
+    },
+    "rudy gobert": {
+      "name": "Rudy Gobert",
+      "team": "MIN",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "reb": 5.5,
+      "pts": 3.5,
+      "ast": 0.5,
+      "blk": 0.5,
+      "stl": 1.5,
+      "ftm": 1.5,
+      "to": 0.5
+    },
+    "mike conley": {
+      "name": "Mike Conley",
+      "team": "MIN",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 0.5,
+      "ast": 1.5,
+      "reb": 0.5,
+      "stl": 0.5,
+      "to": 0.5,
+      "blk": 0.5
+    },
+    "carter bryant": {
+      "name": "Carter Bryant",
+      "team": "SAS",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "pts": 0.5,
+      "reb": 1.5,
+      "ast": 1.5,
+      "blk": 0.5,
+      "to": 0.5,
+      "stl": 0.5,
+      "ftm": 0.5
+    },
+    "luke kornet": {
+      "name": "Luke Kornet",
+      "team": "SAS",
+      "gameTime": "2026-05-15T21:40:00.000-04:00",
+      "reb": 1.5,
+      "pts": 0.5,
+      "blk": 1.5,
+      "ast": 0.5,
+      "stl": 0.5
+    }
+  },
   "DYNASTY_ADP": {},
   "_meta": {
-    "lastUpdated": "2026-05-14T15:12:58.335Z",
+    "lastUpdated": "2026-05-14T20:39:13.697Z",
     "leagueId": "i4mue2axmd7ntz13",
-    "propsDate": null
+    "propsDate": "Thu May 14 2026"
   }
 }
