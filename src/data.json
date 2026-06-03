@@ -465,11 +465,202 @@
       "maxReservePlayers": 5
     }
   },
-  "PLAYER_PROPS": {},
+  "PLAYER_PROPS": {
+    "jalen brunson": {
+      "name": "Jalen Brunson",
+      "team": "NYK",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 19.5,
+      "ast": 4.5,
+      "reb": 1.5,
+      "ftm": 4.5,
+      "to": 2.5,
+      "stl": 0.5,
+      "blk": 0.5
+    },
+    "victor wembanyama": {
+      "name": "Victor Wembanyama",
+      "team": "SAS",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 22.5,
+      "reb": 8.5,
+      "ftm": 6.5,
+      "ast": 1.5,
+      "blk": 2.5,
+      "stl": 0.5,
+      "to": 2.5
+    },
+    "de'aaron fox": {
+      "name": "De'Aaron Fox",
+      "team": "SAS",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 10.5,
+      "ast": 4.5,
+      "reb": 2.5,
+      "stl": 0.5,
+      "ftm": 2.5,
+      "to": 1.5,
+      "blk": 0.5
+    },
+    "karl-anthony towns": {
+      "name": "Karl-Anthony Towns",
+      "team": "NYK",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 12.5,
+      "reb": 8.5,
+      "ast": 2.5,
+      "stl": 0.5,
+      "to": 2.5,
+      "blk": 0.5
+    },
+    "og anunoby": {
+      "name": "OG Anunoby",
+      "team": "NYK",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 11.5,
+      "reb": 3.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "ftm": 2.5,
+      "to": 1.5,
+      "blk": 0.5
+    },
+    "stephon castle": {
+      "name": "Stephon Castle",
+      "team": "SAS",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 11.5,
+      "ast": 4.5,
+      "reb": 3.5,
+      "stl": 0.5,
+      "to": 2.5,
+      "blk": 0.5
+    },
+    "devin vassell": {
+      "name": "Devin Vassell",
+      "team": "SAS",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 8.5,
+      "reb": 2.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "ftm": 1.5,
+      "blk": 0.5,
+      "to": 0.5
+    },
+    "josh hart": {
+      "name": "Josh Hart",
+      "team": "NYK",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 6.5,
+      "reb": 5.5,
+      "ast": 2.5,
+      "stl": 0.5,
+      "to": 2.5,
+      "ftm": 1.5,
+      "blk": 0.5
+    },
+    "mikal bridges": {
+      "name": "Mikal Bridges",
+      "team": "NYK",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 9.5,
+      "reb": 2.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "to": 1.5,
+      "blk": 0.5
+    },
+    "dylan harper": {
+      "name": "Dylan Harper",
+      "team": "SAS",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 6.5,
+      "reb": 2.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "blk": 0.5
+    },
+    "julian champagnie": {
+      "name": "Julian Champagnie",
+      "team": "SAS",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 4.5,
+      "reb": 3.5,
+      "ast": 0.5,
+      "stl": 0.5,
+      "blk": 0.5,
+      "ftm": 0.5,
+      "to": 0.5
+    },
+    "keldon johnson": {
+      "name": "Keldon Johnson",
+      "team": "SAS",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 4.5,
+      "reb": 1.5,
+      "ast": 1.5,
+      "stl": 0.5,
+      "to": 0.5,
+      "blk": 0.5
+    },
+    "landry shamet": {
+      "name": "Landry Shamet",
+      "team": "NYK",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 2.5,
+      "reb": 0.5,
+      "ast": 0.5,
+      "stl": 0.5,
+      "ftm": 0.5,
+      "to": 0.5,
+      "blk": 0.5
+    },
+    "miles mcbride": {
+      "name": "Miles McBride",
+      "team": "NYK",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 2.5,
+      "reb": 0.5,
+      "ast": 0.5,
+      "stl": 0.5,
+      "blk": 0.5,
+      "ftm": 0.5,
+      "to": 0.5
+    },
+    "mitchell robinson": {
+      "name": "Mitchell Robinson",
+      "team": "NYK",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 0.5,
+      "reb": 2.5,
+      "blk": 0.5,
+      "stl": 0.5,
+      "to": 0.5
+    },
+    "luke kornet": {
+      "name": "Luke Kornet",
+      "team": "SAS",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 0.5,
+      "reb": 1.5,
+      "ast": 0.5,
+      "blk": 1.5,
+      "stl": 0.5
+    },
+    "jose alvarado": {
+      "name": "Jose Alvarado",
+      "team": "NYK",
+      "gameTime": "2026-06-03T20:40:00.000-04:00",
+      "pts": 0.5,
+      "ast": 0.5,
+      "stl": 0.5
+    }
+  },
   "DYNASTY_ADP": {},
   "_meta": {
-    "lastUpdated": "2026-06-02T21:53:03.422Z",
+    "lastUpdated": "2026-06-03T00:25:57.197Z",
     "leagueId": "i4mue2axmd7ntz13",
-    "propsDate": null
+    "propsDate": "Wed Jun 03 2026"
   }
 }
