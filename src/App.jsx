@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import DATA from "./data.json";
 import PROSPECT_DATA from "./prospects.json";
+import SUMMER_DATA from "./summer-league.json";
 
 // ============================================================
 // DATA
@@ -818,12 +819,46 @@ function DraftCapital() {
 // TAB 5: PROSPECT SCOUTING
 // ============================================================
 
-const liveSummerSignals = {
-  "aj-dybantsa": "25.0 PPG through two Vegas games; the second included 7 REB, 3 STL and 2 BLK. High-usage scoring has carried over, with the small-sample shooting still noisy.",
-  "darryn-peterson": "25.0 PTS, 3.0 REB, 5.5 AST, 1.0 STL, 1.2 BLK on 61% TS in the reported all-event snapshot. The playmaking jump is the headline.",
-  "cameron-boozer": "Multi-event sample is still moving. Vegas opened with 23 PTS, 6 REB and 4 AST; production has looked broad rather than scoring-only.",
-  "caleb-wilson": "27.0 PTS, 6.5 REB, 2.0 STL and 4.0 BLK through two Vegas games. The stocks signal is loud; the shooting sample is far too small to anchor on.",
-};
+const SUMMER_PLAYERS = SUMMER_DATA.players || {};
+
+function summerMetrics(stats) {
+  if (!stats) return null;
+  return {
+    ...stats,
+    stocks: stats.stl + stats.blk,
+    ts: stats.fga + 0.44 * stats.fta > 0 ? (stats.pts / (2 * (stats.fga + 0.44 * stats.fta))) * 100 : null,
+    astTov: stats.tov > 0 ? stats.ast / stats.tov : null,
+    threePar: stats.fga > 0 ? stats.threeA / stats.fga : null,
+    ftr: stats.fga > 0 ? stats.fta / stats.fga : null,
+  };
+}
+
+function StatTiles({ stats }) {
+  const values = stats ? [
+    ["PTS", stats.pts],
+    ["REB", stats.reb],
+    ["AST", stats.ast],
+    ["STK", (stats.stocks ?? (stats.stl + stats.blk)).toFixed(1)],
+  ] : [["PTS", "—"], ["REB", "—"], ["AST", "—"], ["STK", "—"]];
+  return <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 10 }}>
+    {values.map(([label, value]) => (
+      <div key={label} style={{ background: "#080808", padding: 7, border: `1px solid ${C.border}` }}>
+        <div style={styles.label}>{label}</div>
+        <div style={{ color: stats ? C.green : C.dimmer, fontSize: 16, fontWeight: 700 }}>{value}</div>
+      </div>
+    ))}
+  </div>;
+}
+
+function RateStrip({ items }) {
+  return <div style={{ display: "grid", gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`, gap: 5 }}>
+    {items.map(({ label, value, note }) => <div key={label} style={{ background: "#0b0b0b", padding: "6px 5px", textAlign: "center" }}>
+      <div style={styles.label}>{label}</div>
+      <div style={{ color: value === "—" ? C.dimmer : C.cyan, fontWeight: 700 }}>{value}</div>
+      {note && <div style={{ color: C.dim, fontSize: 8, marginTop: 2 }}>{note}</div>}
+    </div>)}
+  </div>;
+}
 
 function ProspectScouting() {
   const [board, setBoard] = useState(() => [...PROSPECTS].sort((a, b) => a.priority - b.priority));
@@ -854,15 +889,16 @@ function ProspectScouting() {
   });
   const compared = compareIds.map(id => board.find(p => p.id === id)).filter(Boolean);
   const fmt = (value, suffix = "") => value == null ? "—" : `${value}${suffix}`;
+  const pct = (value) => value == null ? "—" : `${value.toFixed(1)}%`;
 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
         {[
           { label: "College first-rounders", value: PROSPECTS.length, color: C.white },
-          { label: "Deep scouting loaded", value: PROSPECTS.filter(p => p.college).length, color: C.green },
+          { label: "College profiles loaded", value: PROSPECTS.filter(p => p.college).length, color: C.green },
           { label: "Current focus tier", value: "4", color: C.amber },
-          { label: "Summer snapshot", value: "LIVE", color: C.cyan },
+          { label: "Vegas profiles loaded", value: Object.keys(SUMMER_PLAYERS).length, color: C.cyan },
         ].map((item) => (
           <div key={item.label} style={styles.card}>
             <div style={styles.label}>{item.label}</div>
@@ -876,7 +912,7 @@ function ProspectScouting() {
           <div>
             <div style={styles.cardTitle}>DYNASTY PRIORITY BOARD</div>
             <div style={{ color: C.white, lineHeight: 1.6, maxWidth: 850 }}>
-              Initial order is format-aware, not a blended model: college production establishes the base; Summer League is displayed as a separate live signal. Use the arrows to pressure-test your order during this session.
+              Initial order is format-aware, not a blended model. College and Las Vegas production use the same visual language but remain separate samples. Use the arrows to pressure-test your order during this session.
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -890,29 +926,54 @@ function ProspectScouting() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.max(compared.length, 1)}, minmax(0, 1fr))`, gap: 10, marginBottom: 16 }}>
-        {compared.map((p, index) => (
+        {compared.map((p, index) => {
+          const stats = sample === "college" ? p.college : summerMetrics(SUMMER_PLAYERS[p.id]);
+          return (
           <div key={p.id} style={{ ...styles.card, borderTop: `2px solid ${[C.green, C.amber, C.cyan, C.magenta][index]}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <div style={{ color: C.white, fontWeight: 700, fontSize: 13 }}>{p.name}</div>
               <span style={styles.badge(C.amber)}>P{board.findIndex(x => x.id === p.id) + 1}</span>
             </div>
             <div style={{ color: C.dim, margin: "4px 0 10px" }}>NBA #{p.draftPick} · {p.team} · {p.position} · {p.school}</div>
-            {sample === "college" ? (
-              p.college && <>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 10 }}>
-                  {[ ["PTS", p.college.pts], ["REB", p.college.reb], ["AST", p.college.ast], ["STK", (p.college.stl + p.college.blk).toFixed(1)] ].map(([label, value]) => (
-                    <div key={label} style={{ background: "#080808", padding: 6 }}><div style={styles.label}>{label}</div><div style={{ color: C.green, fontSize: 16, fontWeight: 700 }}>{value}</div></div>
-                  ))}
-                </div>
-                <div style={{ color: C.white, lineHeight: 1.7 }}>TS <span style={{ color: C.cyan }}>{p.college.ts}%</span> · USG <span style={{ color: C.cyan }}>{p.college.usg}%</span> · BPM <span style={{ color: C.cyan }}>{p.college.bpm}</span> · {p.college.gp} GP</div>
-              </>
-            ) : (
-              <div style={{ color: C.white, lineHeight: 1.65, minHeight: 72 }}>{liveSummerSignals[p.id] || "Summer League aggregate not loaded yet."}</div>
-            )}
+            <StatTiles stats={stats} />
+            {sample === "college" ? <RateStrip items={[
+              { label: "TS", value: pct(stats?.ts) },
+              { label: "USG", value: pct(stats?.usg) },
+              { label: "AST%", value: pct(stats?.astPct) },
+              { label: "TOV%", value: pct(stats?.tovPct) },
+              { label: "GP", value: fmt(stats?.gp) },
+            ]} /> : <RateStrip items={[
+              { label: "TS", value: pct(stats?.ts) },
+              { label: "AST:TO", value: stats?.astTov == null ? "—" : stats.astTov.toFixed(2) },
+              { label: "3PAr", value: pct(stats ? stats.threePar * 100 : null) },
+              { label: "FTr", value: pct(stats ? stats.ftr * 100 : null) },
+              { label: "GP", value: fmt(stats?.gp) },
+            ]} />}
+            {!stats && <div style={{ color: C.dim, marginTop: 8, fontSize: 9 }}>NO LAS VEGAS SAMPLE YET</div>}
             <div style={{ marginTop: 10, color: C.white, lineHeight: 1.55 }}>{p.scouting}</div>
             <div style={{ marginTop: 8 }}>{(p.flags || []).map(flag => <span key={flag} style={styles.badge(flag === "SMALL-N" ? C.red : C.cyan)}>{flag}</span>)}</div>
           </div>
-        ))}
+        );})}
+      </div>
+
+      <div style={{ ...styles.card, borderColor: `${C.cyan}55` }}>
+        <div style={styles.cardTitle}>TRANSLATION LENS — WHAT TO WEIGHT</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+          {[
+            { title: "1 · ROLE + EFFICIENCY", color: C.green, body: "Read USG% and TS% together. Efficient low usage can be role-limited; huge usage without efficiency can collapse against NBA length." },
+            { title: "2 · CREATION", color: C.cyan, body: "AST%, TOV% and AST:TO are cleaner role indicators than raw assists. They separate initiators from players simply finishing possessions." },
+            { title: "3 · SHOOTING SIGNAL", color: C.amber, body: "Prioritize 3PA rate, free-throw rate and FT% over isolated 3P%. Volume and foul pressure stabilize the projection better than a hot percentage." },
+            { title: "4 · FANTASY DEFENSE", color: C.magenta, body: "STL% and BLK% are the direct translation targets for this scoring system. Track foul rate too: stocks only matter if the player stays on court." },
+            { title: "5 · REBOUNDING", color: C.yellow, body: "ORB% is especially useful because it captures motor, timing and functional strength. Use position context before comparing guards with centers." },
+            { title: "6 · SAMPLE + AGE", color: C.red, body: "Games, minutes, age and opponent-quality splits control confidence. Summer League should update the college prior, never erase it after two games." },
+          ].map(item => <div key={item.title} style={{ background: "#080808", padding: 10, borderLeft: `2px solid ${item.color}` }}>
+            <div style={{ color: item.color, fontWeight: 700, fontSize: 10, marginBottom: 5 }}>{item.title}</div>
+            <div style={{ color: C.white, lineHeight: 1.55 }}>{item.body}</div>
+          </div>)}
+        </div>
+        <div style={{ marginTop: 10, padding: 9, background: "#160d00", color: C.amber, lineHeight: 1.5 }}>
+          CONTEXT ONLY: BPM, PER, win shares, plus-minus, offensive/defensive rating and PIE mix in team strength, lineups or winning impact. Useful cross-checks; poor headline predictors of a fantasy stat line.
+        </div>
       </div>
 
       <div style={{ ...styles.card, padding: 0, overflow: "hidden" }}>
@@ -923,18 +984,22 @@ function ProspectScouting() {
         <div style={{ overflowX: "auto" }}>
           <table style={styles.table}>
             <thead><tr>
-              <th style={styles.th}>Pri</th><th style={styles.th}>Move</th><th style={styles.th}>Player</th><th style={styles.thR}>NBA pick</th><th style={styles.th}>Team</th><th style={styles.th}>School</th><th style={styles.th}>Pos</th><th style={styles.thR}>PTS</th><th style={styles.thR}>REB</th><th style={styles.thR}>AST</th><th style={styles.thR}>STK</th><th style={styles.thR}>TS%</th><th style={styles.thR}>USG%</th><th style={styles.thR}>BPM</th><th style={styles.th}>Compare</th>
+              <th style={styles.th}>Pri</th><th style={styles.th}>Move</th><th style={styles.th}>Player</th><th style={styles.thR}>NBA pick</th><th style={styles.th}>Team</th><th style={styles.th}>School</th><th style={styles.th}>Pos</th><th style={styles.thR}>GP</th><th style={styles.thR}>PTS</th><th style={styles.thR}>REB</th><th style={styles.thR}>AST</th><th style={styles.thR}>STK</th><th style={styles.thR}>TS%</th>
+              {sample === "college" ? <><th style={styles.thR}>USG%</th><th style={styles.thR}>AST%</th><th style={styles.thR}>TOV%</th><th style={styles.thR}>STL%</th><th style={styles.thR}>BLK%</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th><th style={styles.th}>Role</th></> : <><th style={styles.thR}>AST:TO</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th></>}
+              <th style={styles.th}>Compare</th>
             </tr></thead>
             <tbody>{filtered.map(p => {
               const rank = board.findIndex(x => x.id === p.id) + 1;
-              const stocks = p.college ? p.college.stl + p.college.blk : null;
+              const stats = sample === "college" ? p.college : summerMetrics(SUMMER_PLAYERS[p.id]);
+              const stocks = stats ? stats.stl + stats.blk : null;
               const selected = compareIds.includes(p.id);
               return <tr key={p.id} style={p.tier === "T1" ? styles.myTeamRow : {}}>
                 <td style={{ ...styles.td, color: rank <= 4 ? C.amber : C.white, fontWeight: 700 }}>#{rank}</td>
                 <td style={styles.td}><button style={styles.expandBtn} onClick={() => moveProspect(p.id, -1)}>↑</button> <button style={styles.expandBtn} onClick={() => moveProspect(p.id, 1)}>↓</button></td>
                 <td style={{ ...styles.td, color: C.white, fontWeight: 700 }}>{p.name} <span style={styles.badge(p.tier === "T1" ? C.green : p.tier === "T2" ? C.cyan : C.dim)}>{p.tier}</span></td>
                 <td style={styles.tdR}>#{p.draftPick}</td><td style={{ ...styles.td, color: C.cyan }}>{p.team}</td><td style={styles.td}>{p.school}</td><td style={styles.td}>{p.position}</td>
-                <td style={styles.tdR}>{fmt(p.college?.pts)}</td><td style={styles.tdR}>{fmt(p.college?.reb)}</td><td style={styles.tdR}>{fmt(p.college?.ast)}</td><td style={{ ...styles.tdR, color: stocks >= 2.5 ? C.green : C.white }}>{fmt(stocks?.toFixed(1))}</td><td style={styles.tdR}>{fmt(p.college?.ts)}</td><td style={styles.tdR}>{fmt(p.college?.usg)}</td><td style={styles.tdR}>{fmt(p.college?.bpm)}</td>
+                <td style={styles.tdR}>{fmt(stats?.gp)}</td><td style={styles.tdR}>{fmt(stats?.pts)}</td><td style={styles.tdR}>{fmt(stats?.reb)}</td><td style={styles.tdR}>{fmt(stats?.ast)}</td><td style={{ ...styles.tdR, color: stocks >= 2.5 ? C.green : C.white }}>{fmt(stocks?.toFixed(1))}</td><td style={styles.tdR}>{stats?.ts == null ? "—" : stats.ts.toFixed(1)}</td>
+                {sample === "college" ? <><td style={styles.tdR}>{fmt(stats?.usg)}</td><td style={styles.tdR}>{fmt(stats?.astPct)}</td><td style={styles.tdR}>{fmt(stats?.tovPct)}</td><td style={styles.tdR}>{fmt(stats?.stlPct)}</td><td style={styles.tdR}>{fmt(stats?.blkPct)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td><td style={{ ...styles.td, color: C.cyan }}>{fmt(stats?.role)}</td></> : <><td style={styles.tdR}>{stats?.astTov == null ? "—" : stats.astTov.toFixed(2)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td></>}
                 <td style={styles.td}><button onClick={() => toggleCompare(p.id)} disabled={!selected && compareIds.length >= 4} style={{ ...styles.expandBtn, color: selected ? C.green : C.dim }}>{selected ? "[X]" : "[ ]"}</button></td>
               </tr>;
             })}</tbody>
@@ -943,7 +1008,7 @@ function ProspectScouting() {
       </div>
 
       <div style={{ color: C.dim, fontSize: 10, lineHeight: 1.6 }}>
-        Snapshot {PROSPECT_DATA.asOf}. College and Summer League are intentionally separate. The cohort excludes Karim López and Sergio De Larrea; blank college rows are queued for the full provider ingest. Summer League runs through July 19, so live notes are provisional.
+        College snapshot {PROSPECT_DATA.asOf}; Las Vegas snapshot {SUMMER_DATA.asOf}. The samples are intentionally separate. All 28 college first-rounders are loaded; Karim López and Sergio De Larrea remain excluded. Missing Vegas rows mean no captured sample, not zero production. Summer League runs through July 19, so the current 2–3 game lines are provisional.
       </div>
     </div>
   );

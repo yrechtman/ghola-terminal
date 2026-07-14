@@ -1,0 +1,24 @@
+{
+  "season": "2026-27",
+  "event": "Las Vegas Summer League",
+  "asOf": "2026-07-14",
+  "source": "RealGM",
+  "players": {
+    "caleb-wilson": { "gp": 2, "mpg": 31.2, "pts": 27.0, "fgm": 10.0, "fga": 19.0, "fg": 52.6, "threeM": 5.0, "threeA": 9.5, "three": 52.6, "ftm": 1.0, "fta": 6.0, "ft": 16.7, "orb": 3.0, "drb": 3.5, "reb": 6.5, "ast": 1.0, "stl": 2.0, "blk": 4.0, "tov": 5.0, "pf": 3.5 },
+    "aj-dybantsa": { "gp": 2, "mpg": 25.4, "pts": 25.0, "fgm": 6.5, "fga": 16.5, "fg": 39.4, "threeM": 0.5, "threeA": 5.5, "three": 9.1, "ftm": 6.0, "fta": 7.0, "ft": 85.7, "orb": 0.0, "drb": 7.0, "reb": 7.0, "ast": 2.0, "stl": 2.5, "blk": 1.5, "tov": 2.0, "pf": 0.5 },
+    "darryn-peterson": { "gp": 2, "mpg": 27.9, "pts": 23.5, "fgm": 6.0, "fga": 18.0, "fg": 33.3, "threeM": 1.5, "threeA": 5.0, "three": 30.0, "ftm": 6.0, "fta": 8.0, "ft": 75.0, "orb": 1.0, "drb": 1.5, "reb": 2.5, "ast": 4.0, "stl": 1.0, "blk": 1.5, "tov": 5.0, "pf": 6.5 },
+    "brayden-burries": { "gp": 3, "mpg": 26.9, "pts": 22.3, "fgm": 7.7, "fga": 15.3, "fg": 50.0, "threeM": 2.7, "threeA": 6.0, "three": 44.4, "ftm": 3.0, "fta": 4.7, "ft": 64.3, "orb": 0.7, "drb": 4.0, "reb": 4.7, "ast": 4.0, "stl": 2.3, "blk": 1.0, "tov": 0.3, "pf": 3.7 },
+    "cameron-boozer": { "gp": 2, "mpg": 28.1, "pts": 22.0, "fgm": 7.0, "fga": 14.5, "fg": 48.3, "threeM": 1.5, "threeA": 4.5, "three": 33.3, "ftm": 4.0, "fta": 5.0, "ft": 80.0, "orb": 2.0, "drb": 5.0, "reb": 7.0, "ast": 3.5, "stl": 2.0, "blk": 0.5, "tov": 3.5, "pf": 5.5 },
+    "labaron-philon-jr": { "gp": 2, "mpg": 31.8, "pts": 21.0, "fgm": 7.5, "fga": 20.5, "fg": 36.6, "threeM": 3.0, "threeA": 7.5, "three": 40.0, "ftm": 1.5, "fta": 3.0, "ft": 50.0, "orb": 0.5, "drb": 2.5, "reb": 3.0, "ast": 6.5, "stl": 1.0, "blk": 0.0, "tov": 2.5, "pf": 2.0 },
+    "morez-johnson-jr": { "gp": 2, "mpg": 30.3, "pts": 18.5, "fgm": 8.0, "fga": 12.5, "fg": 64.0, "threeM": 0.5, "threeA": 2.5, "three": 20.0, "ftm": 1.5, "fta": 2.0, "ft": 75.0, "orb": 1.5, "drb": 5.0, "reb": 6.5, "ast": 1.5, "stl": 2.5, "blk": 3.0, "tov": 1.5, "pf": 7.0 },
+    "yaxel-lendeborg": { "gp": 2, "mpg": 26.3, "pts": 17.5, "fgm": 6.5, "fga": 13.5, "fg": 48.1, "threeM": 3.0, "threeA": 6.0, "three": 50.0, "ftm": 1.0, "fta": 2.0, "ft": 50.0, "orb": 2.0, "drb": 4.0, "reb": 6.0, "ast": 5.0, "stl": 1.5, "blk": 0.0, "tov": 2.0, "pf": 2.5 },
+    "ebuka-okorie": { "gp": 3, "mpg": 30.9, "pts": 16.0, "fgm": 6.0, "fga": 17.0, "fg": 35.3, "threeM": 0.7, "threeA": 4.0, "three": 16.7, "ftm": 2.3, "fta": 3.0, "ft": 77.8, "orb": 0.7, "drb": 2.7, "reb": 3.3, "ast": 4.7, "stl": 3.3, "blk": 0.3, "tov": 2.7, "pf": 3.0 },
+    "koa-peat": { "gp": 3, "mpg": 27.3, "pts": 16.0, "fgm": 6.3, "fga": 12.0, "fg": 52.8, "threeM": 0.0, "threeA": 0.3, "three": 0.0, "ftm": 2.0, "fta": 3.3, "ft": 60.0, "orb": 1.0, "drb": 4.3, "reb": 5.3, "ast": 2.0, "stl": 1.3, "blk": 0.3, "tov": 2.7, "pf": 6.3 },
+    "bennett-stirtz": { "gp": 2, "mpg": 27.1, "pts": 15.5, "fgm": 6.0, "fga": 12.0, "fg": 50.0, "threeM": 2.0, "threeA": 6.0, "three": 33.3, "ftm": 1.0, "fta": 1.0, "ft": 100.0, "orb": 0.0, "drb": 0.5, "reb": 0.5, "ast": 2.0, "stl": 0.5, "blk": 0.5, "tov": 2.0, "pf": 1.5 },
+    "darius-acuff-jr": { "gp": 2, "mpg": 27.9, "pts": 15.5, "fgm": 5.0, "fga": 17.0, "fg": 29.4, "threeM": 1.5, "threeA": 6.5, "three": 23.1, "ftm": 2.5, "fta": 4.0, "ft": 62.5, "orb": 0.0, "drb": 2.0, "reb": 2.0, "ast": 5.5, "stl": 1.0, "blk": 1.0, "tov": 4.5, "pf": 2.5 },
+    "keaton-wagler": { "gp": 2, "mpg": 27.3, "pts": 15.0, "fgm": 3.5, "fga": 11.5, "fg": 30.4, "threeM": 2.5, "threeA": 6.0, "three": 41.7, "ftm": 3.0, "fta": 4.0, "ft": 75.0, "orb": 0.5, "drb": 1.0, "reb": 1.5, "ast": 2.5, "stl": 0.5, "blk": 0.0, "tov": 2.0, "pf": 6.0 },
+    "allen-graves": { "gp": 3, "mpg": 27.5, "pts": 14.7, "fgm": 6.0, "fga": 11.7, "fg": 51.4, "threeM": 2.3, "threeA": 5.3, "three": 43.8, "ftm": 0.3, "fta": 0.3, "ft": 100.0, "orb": 2.0, "drb": 5.0, "reb": 7.0, "ast": 2.7, "stl": 2.7, "blk": 0.7, "tov": 2.3, "pf": 5.0 },
+    "chris-cenac-jr": { "gp": 3, "mpg": 22.9, "pts": 10.7, "fgm": 4.0, "fga": 11.0, "fg": 36.4, "threeM": 0.7, "threeA": 2.7, "three": 25.0, "ftm": 1.0, "fta": 1.7, "ft": 60.0, "orb": 2.7, "drb": 4.0, "reb": 6.7, "ast": 1.0, "stl": 0.3, "blk": 3.0, "tov": 2.7, "pf": 3.3 },
+    "christian-anderson": { "gp": 3, "mpg": 27.1, "pts": 10.3, "fgm": 4.0, "fga": 11.7, "fg": 34.3, "threeM": 1.7, "threeA": 7.0, "three": 23.8, "ftm": 0.3, "fta": 0.7, "ft": 50.0, "orb": 0.3, "drb": 2.3, "reb": 2.7, "ast": 1.0, "stl": 1.0, "blk": 0.3, "tov": 3.0, "pf": 2.0 }
+  }
+}

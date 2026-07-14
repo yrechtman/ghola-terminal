@@ -9,12 +9,14 @@ Built for offseason roster evaluation, trade analysis, draft capital planning, a
 The **Prospect Scouting** tab contains the 28 college players selected in the first round of the 2026 NBA Draft. College and Summer League evidence stay separate by design.
 
 - The initial focus group is Cameron Boozer, AJ Dybantsa, Caleb Wilson, and Darryn Peterson.
-- College cards show counting production plus TS%, usage, and BPM.
-- Summer League is a dated, provisional signal while the event is in progress.
+- All 28 college profiles include counting stats plus TS%, usage, assist/turnover rates, steal/block rates, shot profile, free-throw rate, role, and opponent-quality splits where available.
+- College and Las Vegas cards now share the same counting-stat tiles and compact advanced-rate strip.
+- The July 14 Las Vegas snapshot contains the 16 cohort players with captured event samples; missing rows render as no sample rather than zeroes.
 - The full board can be searched and reordered in-session, and any four players can be selected for comparison.
+- The Translation Lens prioritizes indicators of future NBA statistical production and explicitly separates them from team-impact composites.
 - Karim López and Sergio De Larrea are excluded from this version because their pre-draft production came outside college basketball.
 
-The cohort and current teams come from the official NBA draft board. The initial top-four college snapshot is from Sports-Reference and the Summer League notes are reconciled against NBA game coverage. Blank rows are intentional until the full provider ingest is added.
+The cohort and current teams come from the official NBA draft board. College profiles come from College Hoops Data and can be refreshed with `npm run fetch-prospects`. The current Las Vegas snapshot comes from RealGM and remains provisional while the event is in progress.
 
 ## Stack
 - Vite + React
@@ -23,6 +25,7 @@ The cohort and current teams come from the official NBA draft board. The initial
 
 ## Changelog
 
+- 2026-07-14: Load college production and translation rates for all 28 prospects, add 16-player Las Vegas snapshot, match Summer League cards to the college layout, and add the Translation Lens.
 - 2026-07-14: Add 28-player Prospect Scouting board with format-aware top four, separate college/Summer views, comparison controls, and live reordering.
 - 2026-03-07: Add P/R/A prop lines and dynasty ADP columns to My Roster table (from PrizePicks + Fantrax ADP feeds).
 - 2026-03-07: Fix Draft Capital tab — useEffect, own-pick rank bug, DRAFT_PICKS[MY_TEAM] instead of hardcoded key.
