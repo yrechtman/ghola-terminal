@@ -827,15 +827,34 @@ function summerMetrics(stats) {
     ...stats,
     stocks: stats.stl + stats.blk,
     ts: stats.fga + 0.44 * stats.fta > 0 ? (stats.pts / (2 * (stats.fga + 0.44 * stats.fta))) * 100 : null,
+    efg: stats.fga > 0 ? ((stats.fgm + 0.5 * stats.threeM) / stats.fga) * 100 : null,
     astTov: stats.tov > 0 ? stats.ast / stats.tov : null,
     threePar: stats.fga > 0 ? stats.threeA / stats.fga : null,
     ftr: stats.fga > 0 ? stats.fta / stats.fga : null,
   };
 }
 
+function fantasyPointEquivalency(stats) {
+  if (!stats) return null;
+  const scoringInputs = {
+    FGM: stats.fgm, FGA: stats.fga, "3PTM": stats.threeM,
+    FTM: stats.ftm, FTA: stats.fta, PTS: stats.pts,
+    REB: stats.reb, AST: stats.ast, ST: stats.stl,
+    BLK: stats.blk, TO: stats.tov,
+  };
+  if (Object.values(scoringInputs).some(value => value == null)) return null;
+  const total = Object.entries(scoringInputs).reduce((sum, [key, value]) => sum + value * scoringVal(key), 0);
+  return Math.round(total * 10) / 10;
+}
+
+function per40(value, minutes) {
+  return value == null || !minutes ? null : (value * 40) / minutes;
+}
+
 function ProspectScouting() {
   const [board, setBoard] = useState(() => [...PROSPECTS].sort((a, b) => a.priority - b.priority));
   const [sample, setSample] = useState("college");
+  const [metricView, setMetricView] = useState("counting");
   const [search, setSearch] = useState("");
   const [compareIds, setCompareIds] = useState(() => PROSPECTS.filter(p => p.tier === "T1").map(p => p.id));
 
@@ -887,12 +906,27 @@ function ProspectScouting() {
               Initial order is format-aware, not a blended model. College and Las Vegas production use the same visual language but remain separate samples. Use the arrows to pressure-test your order during this session.
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {["college", "summer"].map(key => (
-              <button key={key} onClick={() => setSample(key)} style={{ ...styles.select, cursor: "pointer", color: sample === key ? "#000" : C.white, background: sample === key ? C.amber : C.panel, borderColor: sample === key ? C.amber : C.dimmer, fontWeight: 700 }}>
-                {key.toUpperCase()}
-              </button>
-            ))}
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ ...styles.label, marginBottom: 4 }}>Sample</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {["college", "summer"].map(key => (
+                  <button key={key} onClick={() => setSample(key)} style={{ ...styles.select, cursor: "pointer", color: sample === key ? "#000" : C.white, background: sample === key ? C.amber : C.panel, borderColor: sample === key ? C.amber : C.dimmer, fontWeight: 700 }}>
+                    {key.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ ...styles.label, marginBottom: 4 }}>Metrics</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {["counting", "advanced"].map(key => (
+                  <button key={key} onClick={() => setMetricView(key)} style={{ ...styles.select, cursor: "pointer", color: metricView === key ? "#000" : C.white, background: metricView === key ? C.cyan : C.panel, borderColor: metricView === key ? C.cyan : C.dimmer, fontWeight: 700 }}>
+                    {key.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -901,23 +935,25 @@ function ProspectScouting() {
         <div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div>
             <div style={styles.cardTitle}>SELECTED PROSPECT COMPARISON</div>
-            <div style={{ color: C.dim, fontSize: 9 }}>{compared.length}/4 selected · scroll horizontally for the full translation line</div>
+            <div style={{ color: C.dim, fontSize: 9 }}>{compared.length}/4 selected · FP EQ applies your league scoring to that sample's per-game box score and stays pinned beside the player</div>
           </div>
           <div style={{ color: C.cyan, fontSize: 9 }}>{sample === "college" ? "COLLEGE PROFILE" : SUMMER_DATA.event.toUpperCase()}</div>
         </div>
         <div style={{ overflowX: "auto" }}>
           {compared.length === 0 ? <div style={{ padding: 18, color: C.dim }}>Select up to four prospects from the full board.</div> :
-          <table style={{ ...styles.table, minWidth: sample === "college" ? 1850 : 1500 }}>
+          <table style={{ ...styles.table, minWidth: metricView === "advanced" && sample === "college" ? 1750 : 1450 }}>
             <thead>
               <tr>
-                <th style={{ ...styles.th, position: "sticky", left: 0, zIndex: 2, background: C.panel }}>Player</th>
+                <th style={{ ...styles.th, position: "sticky", left: 0, zIndex: 3, background: C.panel, minWidth: 145 }}>Player</th>
+                <th style={{ ...styles.thR, position: "sticky", left: 145, zIndex: 3, background: C.panel, color: C.green }}>FP EQ</th>
                 <th style={styles.thR}>Board</th><th style={styles.thR}>NBA</th><th style={styles.th}>Team</th><th style={styles.th}>Pos</th>
-                <th style={styles.thR}>GP</th><th style={styles.thR}>MIN</th><th style={styles.thR}>PTS</th><th style={styles.thR}>REB</th><th style={styles.thR}>AST</th><th style={styles.thR}>STL</th><th style={styles.thR}>BLK</th><th style={styles.thR}>TOV</th><th style={styles.thR}>STK</th>
-                <th style={styles.thR}>FG%</th><th style={styles.thR}>3P%</th><th style={styles.thR}>FT%</th><th style={styles.thR}>TS%</th>
-                {sample === "college" ? <>
-                  <th style={styles.thR}>eFG%</th><th style={styles.thR}>USG%</th><th style={styles.thR}>AST%</th><th style={styles.thR}>TOV%</th><th style={styles.thR}>ORB%</th><th style={styles.thR}>DRB%</th><th style={styles.thR}>STL%</th><th style={styles.thR}>BLK%</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th><th style={styles.thR}>Top50 PTS</th><th style={styles.thR}>Top50 TS%</th><th style={styles.th}>Role</th>
+                <th style={styles.thR}>GP</th><th style={styles.thR}>MIN</th>
+                {metricView === "counting" ? <>
+                  <th style={styles.thR}>PTS</th><th style={styles.thR}>REB</th><th style={styles.thR}>AST</th><th style={styles.thR}>STL</th><th style={styles.thR}>BLK</th><th style={styles.thR}>TOV</th><th style={styles.thR}>STK</th><th style={styles.thR}>FGM/FGA</th><th style={styles.thR}>3PM/3PA</th><th style={styles.thR}>FTM/FTA</th><th style={styles.thR}>FG%</th><th style={styles.thR}>3P%</th><th style={styles.thR}>FT%</th><th style={styles.thR}>PF</th>
+                </> : sample === "college" ? <>
+                  <th style={styles.thR}>TS%</th><th style={styles.thR}>eFG%</th><th style={styles.thR}>USG%</th><th style={styles.thR}>AST%</th><th style={styles.thR}>TOV%</th><th style={styles.thR}>ORB%</th><th style={styles.thR}>DRB%</th><th style={styles.thR}>STL%</th><th style={styles.thR}>BLK%</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th><th style={styles.thR}>Top50 PTS</th><th style={styles.thR}>Top50 TS%</th><th style={styles.th}>Role</th>
                 </> : <>
-                  <th style={styles.thR}>FGM/FGA</th><th style={styles.thR}>3PM/3PA</th><th style={styles.thR}>FTM/FTA</th><th style={styles.thR}>AST:TO</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th><th style={styles.thR}>PF</th>
+                  <th style={styles.thR}>TS%</th><th style={styles.thR}>eFG%</th><th style={styles.thR}>AST:TO</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th><th style={styles.thR}>PTS/40</th><th style={styles.thR}>REB/40</th><th style={styles.thR}>AST/40</th><th style={styles.thR}>STK/40</th><th style={styles.thR}>TOV/40</th>
                 </>}
                 <th style={styles.th}>Remove</th>
               </tr>
@@ -926,14 +962,16 @@ function ProspectScouting() {
               const stats = sample === "college" ? p.college : summerMetrics(SUMMER_PLAYERS[p.id]);
               const stocks = stats ? stats.stl + stats.blk : null;
               return <tr key={p.id}>
-                <td style={{ ...styles.td, position: "sticky", left: 0, zIndex: 1, background: C.panel, color: C.white, fontWeight: 700 }}>{p.name}<div style={{ color: C.dim, fontSize: 8, fontWeight: 400 }}>{p.school}</div></td>
+                <td style={{ ...styles.td, position: "sticky", left: 0, zIndex: 2, background: C.panel, color: C.white, fontWeight: 700, minWidth: 145 }}>{p.name}<div style={{ color: C.dim, fontSize: 8, fontWeight: 400 }}>{p.school}</div></td>
+                <td style={{ ...styles.tdR, position: "sticky", left: 145, zIndex: 2, background: C.panel, color: C.green, fontWeight: 700 }}>{fmt(fantasyPointEquivalency(stats))}</td>
                 <td style={{ ...styles.tdR, color: C.amber, fontWeight: 700 }}>#{board.findIndex(x => x.id === p.id) + 1}</td><td style={styles.tdR}>#{p.draftPick}</td><td style={{ ...styles.td, color: C.cyan }}>{p.team}</td><td style={styles.td}>{p.position}</td>
-                <td style={styles.tdR}>{fmt(stats?.gp)}</td><td style={styles.tdR}>{fmt(stats?.mpg)}</td><td style={{ ...styles.tdR, color: C.green, fontWeight: 700 }}>{fmt(stats?.pts)}</td><td style={styles.tdR}>{fmt(stats?.reb)}</td><td style={styles.tdR}>{fmt(stats?.ast)}</td><td style={styles.tdR}>{fmt(stats?.stl)}</td><td style={styles.tdR}>{fmt(stats?.blk)}</td><td style={styles.tdR}>{fmt(stats?.tov)}</td><td style={{ ...styles.tdR, color: stocks >= 2.5 ? C.green : C.white }}>{stocks == null ? "—" : stocks.toFixed(1)}</td>
-                <td style={styles.tdR}>{fmt(stats?.fg)}</td><td style={styles.tdR}>{fmt(stats?.three)}</td><td style={styles.tdR}>{fmt(stats?.ft)}</td><td style={{ ...styles.tdR, color: C.cyan }}>{stats?.ts == null ? "—" : stats.ts.toFixed(1)}</td>
-                {sample === "college" ? <>
-                  <td style={styles.tdR}>{fmt(stats?.efg)}</td><td style={styles.tdR}>{fmt(stats?.usg)}</td><td style={styles.tdR}>{fmt(stats?.astPct)}</td><td style={styles.tdR}>{fmt(stats?.tovPct)}</td><td style={styles.tdR}>{fmt(stats?.orbPct)}</td><td style={styles.tdR}>{fmt(stats?.drbPct)}</td><td style={styles.tdR}>{fmt(stats?.stlPct)}</td><td style={styles.tdR}>{fmt(stats?.blkPct)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td><td style={styles.tdR}>{fmt(stats?.top50Pts)}</td><td style={styles.tdR}>{fmt(stats?.top50Ts)}</td><td style={{ ...styles.td, color: C.cyan }}>{fmt(stats?.role)}</td>
+                <td style={styles.tdR}>{fmt(stats?.gp)}</td><td style={styles.tdR}>{fmt(stats?.mpg)}</td>
+                {metricView === "counting" ? <>
+                  <td style={{ ...styles.tdR, color: C.green, fontWeight: 700 }}>{fmt(stats?.pts)}</td><td style={styles.tdR}>{fmt(stats?.reb)}</td><td style={styles.tdR}>{fmt(stats?.ast)}</td><td style={styles.tdR}>{fmt(stats?.stl)}</td><td style={styles.tdR}>{fmt(stats?.blk)}</td><td style={styles.tdR}>{fmt(stats?.tov)}</td><td style={{ ...styles.tdR, color: stocks >= 2.5 ? C.green : C.white }}>{stocks == null ? "—" : stocks.toFixed(1)}</td><td style={styles.tdR}>{stats ? `${stats.fgm}/${stats.fga}` : "—"}</td><td style={styles.tdR}>{stats ? `${stats.threeM}/${stats.threeA}` : "—"}</td><td style={styles.tdR}>{stats ? `${stats.ftm}/${stats.fta}` : "—"}</td><td style={styles.tdR}>{fmt(stats?.fg)}</td><td style={styles.tdR}>{fmt(stats?.three)}</td><td style={styles.tdR}>{fmt(stats?.ft)}</td><td style={styles.tdR}>{fmt(stats?.pf)}</td>
+                </> : sample === "college" ? <>
+                  <td style={{ ...styles.tdR, color: C.cyan }}>{stats?.ts == null ? "—" : stats.ts.toFixed(1)}</td><td style={styles.tdR}>{fmt(stats?.efg)}</td><td style={styles.tdR}>{fmt(stats?.usg)}</td><td style={styles.tdR}>{fmt(stats?.astPct)}</td><td style={styles.tdR}>{fmt(stats?.tovPct)}</td><td style={styles.tdR}>{fmt(stats?.orbPct)}</td><td style={styles.tdR}>{fmt(stats?.drbPct)}</td><td style={styles.tdR}>{fmt(stats?.stlPct)}</td><td style={styles.tdR}>{fmt(stats?.blkPct)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td><td style={styles.tdR}>{fmt(stats?.top50Pts)}</td><td style={styles.tdR}>{fmt(stats?.top50Ts)}</td><td style={{ ...styles.td, color: C.cyan }}>{fmt(stats?.role)}</td>
                 </> : <>
-                  <td style={styles.tdR}>{stats ? `${stats.fgm}/${stats.fga}` : "—"}</td><td style={styles.tdR}>{stats ? `${stats.threeM}/${stats.threeA}` : "—"}</td><td style={styles.tdR}>{stats ? `${stats.ftm}/${stats.fta}` : "—"}</td><td style={styles.tdR}>{stats?.astTov == null ? "—" : stats.astTov.toFixed(2)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td><td style={styles.tdR}>{fmt(stats?.pf)}</td>
+                  <td style={{ ...styles.tdR, color: C.cyan }}>{stats?.ts == null ? "—" : stats.ts.toFixed(1)}</td><td style={styles.tdR}>{stats?.efg == null ? "—" : stats.efg.toFixed(1)}</td><td style={styles.tdR}>{stats?.astTov == null ? "—" : stats.astTov.toFixed(2)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td><td style={styles.tdR}>{per40(stats?.pts, stats?.mpg)?.toFixed(1) ?? "—"}</td><td style={styles.tdR}>{per40(stats?.reb, stats?.mpg)?.toFixed(1) ?? "—"}</td><td style={styles.tdR}>{per40(stats?.ast, stats?.mpg)?.toFixed(1) ?? "—"}</td><td style={styles.tdR}>{per40(stocks, stats?.mpg)?.toFixed(1) ?? "—"}</td><td style={styles.tdR}>{per40(stats?.tov, stats?.mpg)?.toFixed(1) ?? "—"}</td>
                 </>}
                 <td style={styles.td}><button onClick={() => toggleCompare(p.id)} style={{ ...styles.expandBtn, color: C.red }}>×</button></td>
               </tr>;
@@ -970,8 +1008,8 @@ function ProspectScouting() {
         <div style={{ overflowX: "auto" }}>
           <table style={styles.table}>
             <thead><tr>
-              <th style={styles.th}>Pri</th><th style={styles.th}>Move</th><th style={styles.th}>Player</th><th style={styles.thR}>NBA pick</th><th style={styles.th}>Team</th><th style={styles.th}>School</th><th style={styles.th}>Pos</th><th style={styles.thR}>GP</th><th style={styles.thR}>PTS</th><th style={styles.thR}>REB</th><th style={styles.thR}>AST</th><th style={styles.thR}>STK</th><th style={styles.thR}>TS%</th>
-              {sample === "college" ? <><th style={styles.thR}>USG%</th><th style={styles.thR}>AST%</th><th style={styles.thR}>TOV%</th><th style={styles.thR}>STL%</th><th style={styles.thR}>BLK%</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th><th style={styles.th}>Role</th></> : <><th style={styles.thR}>AST:TO</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th></>}
+              <th style={styles.th}>Pri</th><th style={styles.th}>Move</th><th style={styles.th}>Player</th><th style={{ ...styles.thR, color: C.green }}>FP EQ</th><th style={styles.thR}>NBA pick</th><th style={styles.th}>Team</th><th style={styles.th}>School</th><th style={styles.th}>Pos</th><th style={styles.thR}>GP</th>
+              {metricView === "counting" ? <><th style={styles.thR}>MIN</th><th style={styles.thR}>PTS</th><th style={styles.thR}>REB</th><th style={styles.thR}>AST</th><th style={styles.thR}>STL</th><th style={styles.thR}>BLK</th><th style={styles.thR}>TOV</th><th style={styles.thR}>STK</th><th style={styles.thR}>FG%</th><th style={styles.thR}>3P%</th><th style={styles.thR}>FT%</th></> : sample === "college" ? <><th style={styles.thR}>TS%</th><th style={styles.thR}>eFG%</th><th style={styles.thR}>USG%</th><th style={styles.thR}>AST%</th><th style={styles.thR}>TOV%</th><th style={styles.thR}>ORB%</th><th style={styles.thR}>DRB%</th><th style={styles.thR}>STL%</th><th style={styles.thR}>BLK%</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th><th style={styles.th}>Role</th></> : <><th style={styles.thR}>TS%</th><th style={styles.thR}>eFG%</th><th style={styles.thR}>AST:TO</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th><th style={styles.thR}>PTS/40</th><th style={styles.thR}>REB/40</th><th style={styles.thR}>AST/40</th><th style={styles.thR}>STK/40</th></>}
               <th style={styles.th}>Compare</th>
             </tr></thead>
             <tbody>{filtered.map(p => {
@@ -983,9 +1021,10 @@ function ProspectScouting() {
                 <td style={{ ...styles.td, color: rank <= 4 ? C.amber : C.white, fontWeight: 700 }}>#{rank}</td>
                 <td style={styles.td}><button style={styles.expandBtn} onClick={() => moveProspect(p.id, -1)}>↑</button> <button style={styles.expandBtn} onClick={() => moveProspect(p.id, 1)}>↓</button></td>
                 <td style={{ ...styles.td, color: C.white, fontWeight: 700 }}>{p.name} <span style={styles.badge(p.tier === "T1" ? C.green : p.tier === "T2" ? C.cyan : C.dim)}>{p.tier}</span></td>
+                <td style={{ ...styles.tdR, color: C.green, fontWeight: 700 }}>{fmt(fantasyPointEquivalency(stats))}</td>
                 <td style={styles.tdR}>#{p.draftPick}</td><td style={{ ...styles.td, color: C.cyan }}>{p.team}</td><td style={styles.td}>{p.school}</td><td style={styles.td}>{p.position}</td>
-                <td style={styles.tdR}>{fmt(stats?.gp)}</td><td style={styles.tdR}>{fmt(stats?.pts)}</td><td style={styles.tdR}>{fmt(stats?.reb)}</td><td style={styles.tdR}>{fmt(stats?.ast)}</td><td style={{ ...styles.tdR, color: stocks >= 2.5 ? C.green : C.white }}>{fmt(stocks?.toFixed(1))}</td><td style={styles.tdR}>{stats?.ts == null ? "—" : stats.ts.toFixed(1)}</td>
-                {sample === "college" ? <><td style={styles.tdR}>{fmt(stats?.usg)}</td><td style={styles.tdR}>{fmt(stats?.astPct)}</td><td style={styles.tdR}>{fmt(stats?.tovPct)}</td><td style={styles.tdR}>{fmt(stats?.stlPct)}</td><td style={styles.tdR}>{fmt(stats?.blkPct)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td><td style={{ ...styles.td, color: C.cyan }}>{fmt(stats?.role)}</td></> : <><td style={styles.tdR}>{stats?.astTov == null ? "—" : stats.astTov.toFixed(2)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td></>}
+                <td style={styles.tdR}>{fmt(stats?.gp)}</td>
+                {metricView === "counting" ? <><td style={styles.tdR}>{fmt(stats?.mpg)}</td><td style={styles.tdR}>{fmt(stats?.pts)}</td><td style={styles.tdR}>{fmt(stats?.reb)}</td><td style={styles.tdR}>{fmt(stats?.ast)}</td><td style={styles.tdR}>{fmt(stats?.stl)}</td><td style={styles.tdR}>{fmt(stats?.blk)}</td><td style={styles.tdR}>{fmt(stats?.tov)}</td><td style={{ ...styles.tdR, color: stocks >= 2.5 ? C.green : C.white }}>{fmt(stocks?.toFixed(1))}</td><td style={styles.tdR}>{fmt(stats?.fg)}</td><td style={styles.tdR}>{fmt(stats?.three)}</td><td style={styles.tdR}>{fmt(stats?.ft)}</td></> : sample === "college" ? <><td style={{ ...styles.tdR, color: C.cyan }}>{stats?.ts == null ? "—" : stats.ts.toFixed(1)}</td><td style={styles.tdR}>{fmt(stats?.efg)}</td><td style={styles.tdR}>{fmt(stats?.usg)}</td><td style={styles.tdR}>{fmt(stats?.astPct)}</td><td style={styles.tdR}>{fmt(stats?.tovPct)}</td><td style={styles.tdR}>{fmt(stats?.orbPct)}</td><td style={styles.tdR}>{fmt(stats?.drbPct)}</td><td style={styles.tdR}>{fmt(stats?.stlPct)}</td><td style={styles.tdR}>{fmt(stats?.blkPct)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td><td style={{ ...styles.td, color: C.cyan }}>{fmt(stats?.role)}</td></> : <><td style={{ ...styles.tdR, color: C.cyan }}>{stats?.ts == null ? "—" : stats.ts.toFixed(1)}</td><td style={styles.tdR}>{stats?.efg == null ? "—" : stats.efg.toFixed(1)}</td><td style={styles.tdR}>{stats?.astTov == null ? "—" : stats.astTov.toFixed(2)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td><td style={styles.tdR}>{per40(stats?.pts, stats?.mpg)?.toFixed(1) ?? "—"}</td><td style={styles.tdR}>{per40(stats?.reb, stats?.mpg)?.toFixed(1) ?? "—"}</td><td style={styles.tdR}>{per40(stats?.ast, stats?.mpg)?.toFixed(1) ?? "—"}</td><td style={styles.tdR}>{per40(stocks, stats?.mpg)?.toFixed(1) ?? "—"}</td></>}
                 <td style={styles.td}><button onClick={() => toggleCompare(p.id)} disabled={!selected && compareIds.length >= 4} style={{ ...styles.expandBtn, color: selected ? C.green : C.dim }}>{selected ? "[X]" : "[ ]"}</button></td>
               </tr>;
             })}</tbody>

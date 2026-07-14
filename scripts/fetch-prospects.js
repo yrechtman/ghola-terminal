@@ -59,6 +59,22 @@ function extract(html, key) {
   return Number.isNaN(numeric) ? raw : numeric;
 }
 
+function extractGameAverages(html) {
+  const match = html.match(/\\"game_log\\":(\[.*?\])\},\\"hotColdTrend/s);
+  if (!match) return {};
+  const games = JSON.parse(match[1].replaceAll('\\"', '"'));
+  const average = (key) => Number((games.reduce((sum, game) => sum + (game[key] || 0), 0) / games.length).toFixed(2));
+  return {
+    fgm: average("field_goals_made"),
+    fga: average("field_goals_attempted"),
+    threeM: average("three_pointers_made"),
+    threeA: average("three_pointers_attempted"),
+    ftm: average("free_throws_made"),
+    fta: average("free_throws_attempted"),
+    pf: average("personal_fouls"),
+  };
+}
+
 async function loadPage(prospect) {
   if (cacheDir) return fs.readFileSync(path.join(cacheDir, `${prospect.id}.html`), "utf8");
   const school = schoolSlugs[prospect.school] || slugify(prospect.school);
@@ -72,6 +88,7 @@ for (const prospect of data.prospects) {
   const html = await loadPage(prospect);
   const college = {};
   for (const [output, provider] of Object.entries(fields)) college[output] = extract(html, provider);
+  Object.assign(college, extractGameAverages(html));
   if (college.gp == null) throw new Error(`${prospect.name}: college stats not found`);
   prospect.college = college;
   if (!cacheDir) await new Promise(resolve => setTimeout(resolve, 175));
