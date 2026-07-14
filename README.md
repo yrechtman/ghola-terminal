@@ -8,13 +8,15 @@ Built for offseason roster evaluation, trade analysis, draft capital planning, a
 
 The **Prospect Scouting** tab contains the 28 college players selected in the first round of the 2026 NBA Draft. College and Summer League evidence stay separate by design.
 
+**New session:** start with [`docs/PROSPECT_SCOUTING.md`](docs/PROSPECT_SCOUTING.md) for the current decisions, formulas, data sources, refresh operations, known limitations, and handoff checklist.
+
 - The initial focus group is Cameron Boozer, AJ Dybantsa, Caleb Wilson, and Darryn Peterson.
 - All 28 college profiles include counting stats plus TS%, usage, assist/turnover rates, steal/block rates, shot profile, free-throw rate, role, and opponent-quality splits where available.
 - The selected-prospect comparison is a dense, horizontally scrollable table with matching College and Las Vegas stat structures.
 - A persistent **FP EQ** column applies the league's exact fantasy scoring weights to each College or Las Vegas per-game box score.
 - A persistent **Avail%** column shows player games divided by team games for the selected sample, highlighting missed time in both college and Summer League.
 - A separate Counting / Advanced toggle changes the statistical lens without hiding player identity, sample size, FP EQ, or Avail%.
-- The July 14 Las Vegas snapshot contains the 16 cohort players with captured event samples; missing rows render as no sample rather than zeroes.
+- The Summer League feed captures matched cohort players as their event samples become available; missing rows render as no sample rather than invented counting-stat zeroes.
 - The full board can be searched and reordered in-session, and any four players can be selected for comparison.
 - Karim López and Sergio De Larrea are excluded from this version because their pre-draft production came outside college basketball.
 
@@ -27,6 +29,7 @@ The cohort and current teams come from the official NBA draft board. College pro
 
 ## Changelog
 
+- 2026-07-14: Add a durable GitHub handoff for prospect-scouting decisions, formulas, data feeds, automation, limitations, and next-session setup.
 - 2026-07-14: Add headless Summer League ingestion and a six-hour GitHub Actions refresh through the end of the event.
 - 2026-07-14: Remove prospect status cards, narrative guidance, mode label, and explanatory footnotes for a data-first layout.
 - 2026-07-14: Add persistent college and Summer League availability percentages using team games as the denominator.
