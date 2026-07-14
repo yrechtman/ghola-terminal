@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "fetch-data": "node scripts/fetch-fantrax.js",
-    "fetch-prospects": "node scripts/fetch-prospects.js"
+    "fetch-prospects": "node scripts/fetch-prospects.js",
+    "fetch-summer": "node scripts/fetch-summer-league.js"
   },
   "dependencies": {
     "react": "^19.2.0",
@@ -25,6 +26,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "playwright": "^1.61.1",
     "vite": "^7.3.1"
   }
 }

@@ -1,0 +1,61 @@
+name: Fetch Summer League Data
+
+on:
+  schedule:
+    - cron: "15 0,6,12,18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: main-data-refresh
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check event window
+        id: window
+        run: |
+          today=$(date -u +%Y-%m-%d)
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" || "$today" < "2026-07-21" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.window.outputs.run == 'true'
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        if: steps.window.outputs.run == 'true'
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.window.outputs.run == 'true'
+        run: npm ci
+
+      - name: Install Chromium
+        if: steps.window.outputs.run == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Refresh Summer League stats
+        if: steps.window.outputs.run == 'true'
+        run: npm run fetch-summer
+
+      - name: Commit and push if data changed
+        if: steps.window.outputs.run == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet src/summer-league.json && echo "No changes" && exit 0
+          git add src/summer-league.json
+          git commit -m "chore: update Summer League data ($(date -u '+%Y-%m-%d %H:%M UTC'))"
+          git pull --rebase origin main
+          git push origin main
