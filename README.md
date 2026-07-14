@@ -10,7 +10,7 @@ The **Prospect Scouting** tab contains the 28 college players selected in the fi
 
 - The initial focus group is Cameron Boozer, AJ Dybantsa, Caleb Wilson, and Darryn Peterson.
 - All 28 college profiles include counting stats plus TS%, usage, assist/turnover rates, steal/block rates, shot profile, free-throw rate, role, and opponent-quality splits where available.
-- College and Las Vegas cards now share the same counting-stat tiles and compact advanced-rate strip.
+- The selected-prospect comparison is a dense, horizontally scrollable table with matching College and Las Vegas stat structures.
 - The July 14 Las Vegas snapshot contains the 16 cohort players with captured event samples; missing rows render as no sample rather than zeroes.
 - The full board can be searched and reordered in-session, and any four players can be selected for comparison.
 - The Translation Lens prioritizes indicators of future NBA statistical production and explicitly separates them from team-impact composites.
@@ -25,6 +25,7 @@ The cohort and current teams come from the official NBA draft board. College pro
 
 ## Changelog
 
+- 2026-07-14: Replace prospect comparison cards with a richer side-by-side table covering shooting lines, creation, rebounding, defensive rates, role, and opponent-quality splits.
 - 2026-07-14: Load college production and translation rates for all 28 prospects, add 16-player Las Vegas snapshot, match Summer League cards to the college layout, and add the Translation Lens.
 - 2026-07-14: Add 28-player Prospect Scouting board with format-aware top four, separate college/Summer views, comparison controls, and live reordering.
 - 2026-03-07: Add P/R/A prop lines and dynasty ADP columns to My Roster table (from PrizePicks + Fantrax ADP feeds).

@@ -833,33 +833,6 @@ function summerMetrics(stats) {
   };
 }
 
-function StatTiles({ stats }) {
-  const values = stats ? [
-    ["PTS", stats.pts],
-    ["REB", stats.reb],
-    ["AST", stats.ast],
-    ["STK", (stats.stocks ?? (stats.stl + stats.blk)).toFixed(1)],
-  ] : [["PTS", "—"], ["REB", "—"], ["AST", "—"], ["STK", "—"]];
-  return <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 10 }}>
-    {values.map(([label, value]) => (
-      <div key={label} style={{ background: "#080808", padding: 7, border: `1px solid ${C.border}` }}>
-        <div style={styles.label}>{label}</div>
-        <div style={{ color: stats ? C.green : C.dimmer, fontSize: 16, fontWeight: 700 }}>{value}</div>
-      </div>
-    ))}
-  </div>;
-}
-
-function RateStrip({ items }) {
-  return <div style={{ display: "grid", gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`, gap: 5 }}>
-    {items.map(({ label, value, note }) => <div key={label} style={{ background: "#0b0b0b", padding: "6px 5px", textAlign: "center" }}>
-      <div style={styles.label}>{label}</div>
-      <div style={{ color: value === "—" ? C.dimmer : C.cyan, fontWeight: 700 }}>{value}</div>
-      {note && <div style={{ color: C.dim, fontSize: 8, marginTop: 2 }}>{note}</div>}
-    </div>)}
-  </div>;
-}
-
 function ProspectScouting() {
   const [board, setBoard] = useState(() => [...PROSPECTS].sort((a, b) => a.priority - b.priority));
   const [sample, setSample] = useState("college");
@@ -889,7 +862,6 @@ function ProspectScouting() {
   });
   const compared = compareIds.map(id => board.find(p => p.id === id)).filter(Boolean);
   const fmt = (value, suffix = "") => value == null ? "—" : `${value}${suffix}`;
-  const pct = (value) => value == null ? "—" : `${value.toFixed(1)}%`;
 
   return (
     <div>
@@ -925,35 +897,49 @@ function ProspectScouting() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.max(compared.length, 1)}, minmax(0, 1fr))`, gap: 10, marginBottom: 16 }}>
-        {compared.map((p, index) => {
-          const stats = sample === "college" ? p.college : summerMetrics(SUMMER_PLAYERS[p.id]);
-          return (
-          <div key={p.id} style={{ ...styles.card, borderTop: `2px solid ${[C.green, C.amber, C.cyan, C.magenta][index]}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <div style={{ color: C.white, fontWeight: 700, fontSize: 13 }}>{p.name}</div>
-              <span style={styles.badge(C.amber)}>P{board.findIndex(x => x.id === p.id) + 1}</span>
-            </div>
-            <div style={{ color: C.dim, margin: "4px 0 10px" }}>NBA #{p.draftPick} · {p.team} · {p.position} · {p.school}</div>
-            <StatTiles stats={stats} />
-            {sample === "college" ? <RateStrip items={[
-              { label: "TS", value: pct(stats?.ts) },
-              { label: "USG", value: pct(stats?.usg) },
-              { label: "AST%", value: pct(stats?.astPct) },
-              { label: "TOV%", value: pct(stats?.tovPct) },
-              { label: "GP", value: fmt(stats?.gp) },
-            ]} /> : <RateStrip items={[
-              { label: "TS", value: pct(stats?.ts) },
-              { label: "AST:TO", value: stats?.astTov == null ? "—" : stats.astTov.toFixed(2) },
-              { label: "3PAr", value: pct(stats ? stats.threePar * 100 : null) },
-              { label: "FTr", value: pct(stats ? stats.ftr * 100 : null) },
-              { label: "GP", value: fmt(stats?.gp) },
-            ]} />}
-            {!stats && <div style={{ color: C.dim, marginTop: 8, fontSize: 9 }}>NO LAS VEGAS SAMPLE YET</div>}
-            <div style={{ marginTop: 10, color: C.white, lineHeight: 1.55 }}>{p.scouting}</div>
-            <div style={{ marginTop: 8 }}>{(p.flags || []).map(flag => <span key={flag} style={styles.badge(flag === "SMALL-N" ? C.red : C.cyan)}>{flag}</span>)}</div>
+      <div style={{ ...styles.card, padding: 0, overflow: "hidden" }}>
+        <div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <div>
+            <div style={styles.cardTitle}>SELECTED PROSPECT COMPARISON</div>
+            <div style={{ color: C.dim, fontSize: 9 }}>{compared.length}/4 selected · scroll horizontally for the full translation line</div>
           </div>
-        );})}
+          <div style={{ color: C.cyan, fontSize: 9 }}>{sample === "college" ? "COLLEGE PROFILE" : SUMMER_DATA.event.toUpperCase()}</div>
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          {compared.length === 0 ? <div style={{ padding: 18, color: C.dim }}>Select up to four prospects from the full board.</div> :
+          <table style={{ ...styles.table, minWidth: sample === "college" ? 1850 : 1500 }}>
+            <thead>
+              <tr>
+                <th style={{ ...styles.th, position: "sticky", left: 0, zIndex: 2, background: C.panel }}>Player</th>
+                <th style={styles.thR}>Board</th><th style={styles.thR}>NBA</th><th style={styles.th}>Team</th><th style={styles.th}>Pos</th>
+                <th style={styles.thR}>GP</th><th style={styles.thR}>MIN</th><th style={styles.thR}>PTS</th><th style={styles.thR}>REB</th><th style={styles.thR}>AST</th><th style={styles.thR}>STL</th><th style={styles.thR}>BLK</th><th style={styles.thR}>TOV</th><th style={styles.thR}>STK</th>
+                <th style={styles.thR}>FG%</th><th style={styles.thR}>3P%</th><th style={styles.thR}>FT%</th><th style={styles.thR}>TS%</th>
+                {sample === "college" ? <>
+                  <th style={styles.thR}>eFG%</th><th style={styles.thR}>USG%</th><th style={styles.thR}>AST%</th><th style={styles.thR}>TOV%</th><th style={styles.thR}>ORB%</th><th style={styles.thR}>DRB%</th><th style={styles.thR}>STL%</th><th style={styles.thR}>BLK%</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th><th style={styles.thR}>Top50 PTS</th><th style={styles.thR}>Top50 TS%</th><th style={styles.th}>Role</th>
+                </> : <>
+                  <th style={styles.thR}>FGM/FGA</th><th style={styles.thR}>3PM/3PA</th><th style={styles.thR}>FTM/FTA</th><th style={styles.thR}>AST:TO</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th><th style={styles.thR}>PF</th>
+                </>}
+                <th style={styles.th}>Remove</th>
+              </tr>
+            </thead>
+            <tbody>{compared.map(p => {
+              const stats = sample === "college" ? p.college : summerMetrics(SUMMER_PLAYERS[p.id]);
+              const stocks = stats ? stats.stl + stats.blk : null;
+              return <tr key={p.id}>
+                <td style={{ ...styles.td, position: "sticky", left: 0, zIndex: 1, background: C.panel, color: C.white, fontWeight: 700 }}>{p.name}<div style={{ color: C.dim, fontSize: 8, fontWeight: 400 }}>{p.school}</div></td>
+                <td style={{ ...styles.tdR, color: C.amber, fontWeight: 700 }}>#{board.findIndex(x => x.id === p.id) + 1}</td><td style={styles.tdR}>#{p.draftPick}</td><td style={{ ...styles.td, color: C.cyan }}>{p.team}</td><td style={styles.td}>{p.position}</td>
+                <td style={styles.tdR}>{fmt(stats?.gp)}</td><td style={styles.tdR}>{fmt(stats?.mpg)}</td><td style={{ ...styles.tdR, color: C.green, fontWeight: 700 }}>{fmt(stats?.pts)}</td><td style={styles.tdR}>{fmt(stats?.reb)}</td><td style={styles.tdR}>{fmt(stats?.ast)}</td><td style={styles.tdR}>{fmt(stats?.stl)}</td><td style={styles.tdR}>{fmt(stats?.blk)}</td><td style={styles.tdR}>{fmt(stats?.tov)}</td><td style={{ ...styles.tdR, color: stocks >= 2.5 ? C.green : C.white }}>{stocks == null ? "—" : stocks.toFixed(1)}</td>
+                <td style={styles.tdR}>{fmt(stats?.fg)}</td><td style={styles.tdR}>{fmt(stats?.three)}</td><td style={styles.tdR}>{fmt(stats?.ft)}</td><td style={{ ...styles.tdR, color: C.cyan }}>{stats?.ts == null ? "—" : stats.ts.toFixed(1)}</td>
+                {sample === "college" ? <>
+                  <td style={styles.tdR}>{fmt(stats?.efg)}</td><td style={styles.tdR}>{fmt(stats?.usg)}</td><td style={styles.tdR}>{fmt(stats?.astPct)}</td><td style={styles.tdR}>{fmt(stats?.tovPct)}</td><td style={styles.tdR}>{fmt(stats?.orbPct)}</td><td style={styles.tdR}>{fmt(stats?.drbPct)}</td><td style={styles.tdR}>{fmt(stats?.stlPct)}</td><td style={styles.tdR}>{fmt(stats?.blkPct)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td><td style={styles.tdR}>{fmt(stats?.top50Pts)}</td><td style={styles.tdR}>{fmt(stats?.top50Ts)}</td><td style={{ ...styles.td, color: C.cyan }}>{fmt(stats?.role)}</td>
+                </> : <>
+                  <td style={styles.tdR}>{stats ? `${stats.fgm}/${stats.fga}` : "—"}</td><td style={styles.tdR}>{stats ? `${stats.threeM}/${stats.threeA}` : "—"}</td><td style={styles.tdR}>{stats ? `${stats.ftm}/${stats.fta}` : "—"}</td><td style={styles.tdR}>{stats?.astTov == null ? "—" : stats.astTov.toFixed(2)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td><td style={styles.tdR}>{fmt(stats?.pf)}</td>
+                </>}
+                <td style={styles.td}><button onClick={() => toggleCompare(p.id)} style={{ ...styles.expandBtn, color: C.red }}>×</button></td>
+              </tr>;
+            })}</tbody>
+          </table>}
+        </div>
       </div>
 
       <div style={{ ...styles.card, borderColor: `${C.cyan}55` }}>
