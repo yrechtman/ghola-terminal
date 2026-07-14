@@ -403,3 +403,4 @@ async function main() {
 }
 
 main();
+/* global process */

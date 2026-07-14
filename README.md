@@ -4,6 +4,18 @@ Fantasy basketball dynasty league command center for team **tleilaxu** in **The 
 
 Built for offseason roster evaluation, trade analysis, draft capital planning, and finding edge in a league where everyone thinks you're trying to fleece them.
 
+## Prospect scouting
+
+The **Prospect Scouting** tab contains the 28 college players selected in the first round of the 2026 NBA Draft. College and Summer League evidence stay separate by design.
+
+- The initial focus group is Cameron Boozer, AJ Dybantsa, Caleb Wilson, and Darryn Peterson.
+- College cards show counting production plus TS%, usage, and BPM.
+- Summer League is a dated, provisional signal while the event is in progress.
+- The full board can be searched and reordered in-session, and any four players can be selected for comparison.
+- Karim López and Sergio De Larrea are excluded from this version because their pre-draft production came outside college basketball.
+
+The cohort and current teams come from the official NBA draft board. The initial top-four college snapshot is from Sports-Reference and the Summer League notes are reconciled against NBA game coverage. Blank rows are intentional until the full provider ingest is added.
+
 ## Stack
 - Vite + React
 - Recharts
@@ -11,6 +23,7 @@ Built for offseason roster evaluation, trade analysis, draft capital planning, a
 
 ## Changelog
 
+- 2026-07-14: Add 28-player Prospect Scouting board with format-aware top four, separate college/Summer views, comparison controls, and live reordering.
 - 2026-03-07: Add P/R/A prop lines and dynasty ADP columns to My Roster table (from PrizePicks + Fantrax ADP feeds).
 - 2026-03-07: Fix Draft Capital tab — useEffect, own-pick rank bug, DRAFT_PICKS[MY_TEAM] instead of hardcoded key.
 - 2026-03-07: Full legibility audit — all real data columns now white; grey reserved for decoration only.

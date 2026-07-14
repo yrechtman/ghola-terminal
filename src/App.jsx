@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import DATA from "./data.json";
+import PROSPECT_DATA from "./prospects.json";
 
 // ============================================================
 // DATA
@@ -31,6 +32,7 @@ const LOTTERY_ODDS = {
 const { DRAFT_PICKS, STANDINGS, RAW_CSV } = DATA;
 const PLAYER_PROPS = DATA.PLAYER_PROPS || {};
 const DYNASTY_ADP = DATA.DYNASTY_ADP || {};
+const PROSPECTS = PROSPECT_DATA.prospects || [];
 
 function normalizeName(name) {
   return name.toLowerCase()
@@ -558,7 +560,6 @@ function TradeAnalyzer() {
 
 function DraftCapital() {
   const [simCount, setSimCount] = useState(50000);
-  const [simResults, setSimResults] = useState(null);
 
   const standings = STANDINGS;
 
@@ -568,11 +569,9 @@ function DraftCapital() {
     .map(p => ({ ...p, from: p.from || MY_TEAM }));
   const BALLS = { 10: 40, 9: 30, 8: 20, 7: 7, 6: 3 };
 
-  const lotteryTeams = useMemo(() => {
-    return standings.filter(s => s.rank >= 6).sort((a, b) => b.rank - a.rank).map(s => ({
-      team: s.team, rank: s.rank, balls: BALLS[s.rank] || 0
-    }));
-  }, []);
+  const lotteryTeams = standings.filter(s => s.rank >= 6).sort((a, b) => b.rank - a.rank).map(s => ({
+    team: s.team, rank: s.rank, balls: BALLS[s.rank] || 0
+  }));
 
   function runSim(N) {
     const myPickTeams = myFirsts.map(p => p.from);
@@ -627,7 +626,7 @@ function DraftCapital() {
     return { perPick, bestDist, bestEV, pFirst, pTop3, pTop5, N };
   }
 
-  useEffect(() => { setSimResults(runSim(simCount)); }, []);
+  const [simResults, setSimResults] = useState(() => runSim(50000));
 
   const doRun = () => setSimResults(runSim(simCount));
 
@@ -816,7 +815,142 @@ function DraftCapital() {
 }
 
 // ============================================================
-// TAB 5: FREE AGENTS (placeholder)
+// TAB 5: PROSPECT SCOUTING
+// ============================================================
+
+const liveSummerSignals = {
+  "aj-dybantsa": "25.0 PPG through two Vegas games; the second included 7 REB, 3 STL and 2 BLK. High-usage scoring has carried over, with the small-sample shooting still noisy.",
+  "darryn-peterson": "25.0 PTS, 3.0 REB, 5.5 AST, 1.0 STL, 1.2 BLK on 61% TS in the reported all-event snapshot. The playmaking jump is the headline.",
+  "cameron-boozer": "Multi-event sample is still moving. Vegas opened with 23 PTS, 6 REB and 4 AST; production has looked broad rather than scoring-only.",
+  "caleb-wilson": "27.0 PTS, 6.5 REB, 2.0 STL and 4.0 BLK through two Vegas games. The stocks signal is loud; the shooting sample is far too small to anchor on.",
+};
+
+function ProspectScouting() {
+  const [board, setBoard] = useState(() => [...PROSPECTS].sort((a, b) => a.priority - b.priority));
+  const [sample, setSample] = useState("college");
+  const [search, setSearch] = useState("");
+  const [compareIds, setCompareIds] = useState(() => PROSPECTS.filter(p => p.tier === "T1").map(p => p.id));
+
+  const moveProspect = (id, direction) => {
+    setBoard(current => {
+      const next = [...current];
+      const index = next.findIndex(p => p.id === id);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= next.length) return current;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const toggleCompare = (id) => {
+    setCompareIds(current => current.includes(id)
+      ? current.filter(x => x !== id)
+      : current.length < 4 ? [...current, id] : current);
+  };
+
+  const filtered = board.filter(p => {
+    const q = search.toLowerCase();
+    return !q || `${p.name} ${p.team} ${p.school} ${p.position}`.toLowerCase().includes(q);
+  });
+  const compared = compareIds.map(id => board.find(p => p.id === id)).filter(Boolean);
+  const fmt = (value, suffix = "") => value == null ? "—" : `${value}${suffix}`;
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
+        {[
+          { label: "College first-rounders", value: PROSPECTS.length, color: C.white },
+          { label: "Deep scouting loaded", value: PROSPECTS.filter(p => p.college).length, color: C.green },
+          { label: "Current focus tier", value: "4", color: C.amber },
+          { label: "Summer snapshot", value: "LIVE", color: C.cyan },
+        ].map((item) => (
+          <div key={item.label} style={styles.card}>
+            <div style={styles.label}>{item.label}</div>
+            <div style={{ ...styles.bigNum, color: item.color }}>{item.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ ...styles.card, borderColor: `${C.amber}66` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <div style={styles.cardTitle}>DYNASTY PRIORITY BOARD</div>
+            <div style={{ color: C.white, lineHeight: 1.6, maxWidth: 850 }}>
+              Initial order is format-aware, not a blended model: college production establishes the base; Summer League is displayed as a separate live signal. Use the arrows to pressure-test your order during this session.
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {["college", "summer"].map(key => (
+              <button key={key} onClick={() => setSample(key)} style={{ ...styles.select, cursor: "pointer", color: sample === key ? "#000" : C.white, background: sample === key ? C.amber : C.panel, borderColor: sample === key ? C.amber : C.dimmer, fontWeight: 700 }}>
+                {key.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.max(compared.length, 1)}, minmax(0, 1fr))`, gap: 10, marginBottom: 16 }}>
+        {compared.map((p, index) => (
+          <div key={p.id} style={{ ...styles.card, borderTop: `2px solid ${[C.green, C.amber, C.cyan, C.magenta][index]}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+              <div style={{ color: C.white, fontWeight: 700, fontSize: 13 }}>{p.name}</div>
+              <span style={styles.badge(C.amber)}>P{board.findIndex(x => x.id === p.id) + 1}</span>
+            </div>
+            <div style={{ color: C.dim, margin: "4px 0 10px" }}>NBA #{p.draftPick} · {p.team} · {p.position} · {p.school}</div>
+            {sample === "college" ? (
+              p.college && <>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 10 }}>
+                  {[ ["PTS", p.college.pts], ["REB", p.college.reb], ["AST", p.college.ast], ["STK", (p.college.stl + p.college.blk).toFixed(1)] ].map(([label, value]) => (
+                    <div key={label} style={{ background: "#080808", padding: 6 }}><div style={styles.label}>{label}</div><div style={{ color: C.green, fontSize: 16, fontWeight: 700 }}>{value}</div></div>
+                  ))}
+                </div>
+                <div style={{ color: C.white, lineHeight: 1.7 }}>TS <span style={{ color: C.cyan }}>{p.college.ts}%</span> · USG <span style={{ color: C.cyan }}>{p.college.usg}%</span> · BPM <span style={{ color: C.cyan }}>{p.college.bpm}</span> · {p.college.gp} GP</div>
+              </>
+            ) : (
+              <div style={{ color: C.white, lineHeight: 1.65, minHeight: 72 }}>{liveSummerSignals[p.id] || "Summer League aggregate not loaded yet."}</div>
+            )}
+            <div style={{ marginTop: 10, color: C.white, lineHeight: 1.55 }}>{p.scouting}</div>
+            <div style={{ marginTop: 8 }}>{(p.flags || []).map(flag => <span key={flag} style={styles.badge(flag === "SMALL-N" ? C.red : C.cyan)}>{flag}</span>)}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ ...styles.card, padding: 0, overflow: "hidden" }}>
+        <div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <div style={styles.cardTitle}>FULL 28-PLAYER BOARD</div>
+          <input style={styles.searchInput} value={search} onChange={e => setSearch(e.target.value)} placeholder="Search player, team, school..." />
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={styles.table}>
+            <thead><tr>
+              <th style={styles.th}>Pri</th><th style={styles.th}>Move</th><th style={styles.th}>Player</th><th style={styles.thR}>NBA pick</th><th style={styles.th}>Team</th><th style={styles.th}>School</th><th style={styles.th}>Pos</th><th style={styles.thR}>PTS</th><th style={styles.thR}>REB</th><th style={styles.thR}>AST</th><th style={styles.thR}>STK</th><th style={styles.thR}>TS%</th><th style={styles.thR}>USG%</th><th style={styles.thR}>BPM</th><th style={styles.th}>Compare</th>
+            </tr></thead>
+            <tbody>{filtered.map(p => {
+              const rank = board.findIndex(x => x.id === p.id) + 1;
+              const stocks = p.college ? p.college.stl + p.college.blk : null;
+              const selected = compareIds.includes(p.id);
+              return <tr key={p.id} style={p.tier === "T1" ? styles.myTeamRow : {}}>
+                <td style={{ ...styles.td, color: rank <= 4 ? C.amber : C.white, fontWeight: 700 }}>#{rank}</td>
+                <td style={styles.td}><button style={styles.expandBtn} onClick={() => moveProspect(p.id, -1)}>↑</button> <button style={styles.expandBtn} onClick={() => moveProspect(p.id, 1)}>↓</button></td>
+                <td style={{ ...styles.td, color: C.white, fontWeight: 700 }}>{p.name} <span style={styles.badge(p.tier === "T1" ? C.green : p.tier === "T2" ? C.cyan : C.dim)}>{p.tier}</span></td>
+                <td style={styles.tdR}>#{p.draftPick}</td><td style={{ ...styles.td, color: C.cyan }}>{p.team}</td><td style={styles.td}>{p.school}</td><td style={styles.td}>{p.position}</td>
+                <td style={styles.tdR}>{fmt(p.college?.pts)}</td><td style={styles.tdR}>{fmt(p.college?.reb)}</td><td style={styles.tdR}>{fmt(p.college?.ast)}</td><td style={{ ...styles.tdR, color: stocks >= 2.5 ? C.green : C.white }}>{fmt(stocks?.toFixed(1))}</td><td style={styles.tdR}>{fmt(p.college?.ts)}</td><td style={styles.tdR}>{fmt(p.college?.usg)}</td><td style={styles.tdR}>{fmt(p.college?.bpm)}</td>
+                <td style={styles.td}><button onClick={() => toggleCompare(p.id)} disabled={!selected && compareIds.length >= 4} style={{ ...styles.expandBtn, color: selected ? C.green : C.dim }}>{selected ? "[X]" : "[ ]"}</button></td>
+              </tr>;
+            })}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={{ color: C.dim, fontSize: 10, lineHeight: 1.6 }}>
+        Snapshot {PROSPECT_DATA.asOf}. College and Summer League are intentionally separate. The cohort excludes Karim López and Sergio De Larrea; blank college rows are queued for the full provider ingest. Summer League runs through July 19, so live notes are provisional.
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// TAB 6: FREE AGENTS (placeholder)
 // ============================================================
 
 function FreeAgents() {
@@ -848,6 +982,7 @@ const TABS = [
   { id: "league", label: "League", component: LeagueLandscape },
   { id: "trade", label: "Trade Analyzer", component: TradeAnalyzer },
   { id: "draft", label: "Draft Capital", component: DraftCapital },
+  { id: "prospects", label: "Prospect Scouting", component: ProspectScouting },
   { id: "fa", label: "Free Agents", component: FreeAgents },
 ];
 
