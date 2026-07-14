@@ -7,6 +7,7 @@ const dataPath = path.join(root, "src", "prospects.json");
 const data = JSON.parse(fs.readFileSync(dataPath, "utf8"));
 const cacheArg = globalThis.process.argv.indexOf("--cache");
 const cacheDir = cacheArg >= 0 ? globalThis.process.argv[cacheArg + 1] : null;
+const teamGamesCache = new Map();
 
 const schoolSlugs = {
   Connecticut: "uconn",
@@ -84,11 +85,28 @@ async function loadPage(prospect) {
   return response.text();
 }
 
+async function loadTeamGames(prospect) {
+  const school = schoolSlugs[prospect.school] || slugify(prospect.school);
+  if (!teamGamesCache.has(school)) {
+    teamGamesCache.set(school, (async () => {
+      const url = `https://www.college-hoops-data.com/teams/${school}`;
+      const response = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 prospect-research/1.0" } });
+      if (!response.ok) throw new Error(`${prospect.school}: ${response.status} ${response.statusText}`);
+      const html = await response.text();
+      const match = html.match(/\\"games_played\\":(\d+)/);
+      if (!match) throw new Error(`${prospect.school}: team games not found`);
+      return Number(match[1]);
+    })());
+  }
+  return teamGamesCache.get(school);
+}
+
 for (const prospect of data.prospects) {
   const html = await loadPage(prospect);
   const college = {};
   for (const [output, provider] of Object.entries(fields)) college[output] = extract(html, provider);
   Object.assign(college, extractGameAverages(html));
+  college.teamGames = await loadTeamGames(prospect);
   if (college.gp == null) throw new Error(`${prospect.name}: college stats not found`);
   prospect.college = college;
   if (!cacheDir) await new Promise(resolve => setTimeout(resolve, 175));

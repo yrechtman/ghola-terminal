@@ -851,6 +851,18 @@ function per40(value, minutes) {
   return value == null || !minutes ? null : (value * 40) / minutes;
 }
 
+function availabilityPct(gamesPlayed, teamGames) {
+  return gamesPlayed == null || !teamGames ? null : Math.round((gamesPlayed / teamGames) * 1000) / 10;
+}
+
+function availabilityColor(value) {
+  if (value == null) return C.dimmer;
+  if (value >= 97.5) return C.green;
+  if (value >= 90) return C.cyan;
+  if (value >= 75) return C.amber;
+  return C.red;
+}
+
 function ProspectScouting() {
   const [board, setBoard] = useState(() => [...PROSPECTS].sort((a, b) => a.priority - b.priority));
   const [sample, setSample] = useState("college");
@@ -884,49 +896,25 @@ function ProspectScouting() {
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
-        {[
-          { label: "College first-rounders", value: PROSPECTS.length, color: C.white },
-          { label: "College profiles loaded", value: PROSPECTS.filter(p => p.college).length, color: C.green },
-          { label: "Current focus tier", value: "4", color: C.amber },
-          { label: "Vegas profiles loaded", value: Object.keys(SUMMER_PLAYERS).length, color: C.cyan },
-        ].map((item) => (
-          <div key={item.label} style={styles.card}>
-            <div style={styles.label}>{item.label}</div>
-            <div style={{ ...styles.bigNum, color: item.color }}>{item.value}</div>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 14, flexWrap: "wrap", marginBottom: 10 }}>
+        <div>
+          <div style={{ ...styles.label, marginBottom: 4 }}>Sample</div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {["college", "summer"].map(key => (
+              <button key={key} onClick={() => setSample(key)} style={{ ...styles.select, cursor: "pointer", color: sample === key ? "#000" : C.white, background: sample === key ? C.amber : C.panel, borderColor: sample === key ? C.amber : C.dimmer, fontWeight: 700 }}>
+                {key.toUpperCase()}
+              </button>
+            ))}
           </div>
-        ))}
-      </div>
-
-      <div style={{ ...styles.card, borderColor: `${C.amber}66` }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div>
-            <div style={styles.cardTitle}>DYNASTY PRIORITY BOARD</div>
-            <div style={{ color: C.white, lineHeight: 1.6, maxWidth: 850 }}>
-              Initial order is format-aware, not a blended model. College and Las Vegas production use the same visual language but remain separate samples. Use the arrows to pressure-test your order during this session.
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-            <div>
-              <div style={{ ...styles.label, marginBottom: 4 }}>Sample</div>
-              <div style={{ display: "flex", gap: 6 }}>
-                {["college", "summer"].map(key => (
-                  <button key={key} onClick={() => setSample(key)} style={{ ...styles.select, cursor: "pointer", color: sample === key ? "#000" : C.white, background: sample === key ? C.amber : C.panel, borderColor: sample === key ? C.amber : C.dimmer, fontWeight: 700 }}>
-                    {key.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div style={{ ...styles.label, marginBottom: 4 }}>Metrics</div>
-              <div style={{ display: "flex", gap: 6 }}>
-                {["counting", "advanced"].map(key => (
-                  <button key={key} onClick={() => setMetricView(key)} style={{ ...styles.select, cursor: "pointer", color: metricView === key ? "#000" : C.white, background: metricView === key ? C.cyan : C.panel, borderColor: metricView === key ? C.cyan : C.dimmer, fontWeight: 700 }}>
-                    {key.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
+        </div>
+        <div>
+          <div style={{ ...styles.label, marginBottom: 4 }}>Metrics</div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {["counting", "advanced"].map(key => (
+              <button key={key} onClick={() => setMetricView(key)} style={{ ...styles.select, cursor: "pointer", color: metricView === key ? "#000" : C.white, background: metricView === key ? C.cyan : C.panel, borderColor: metricView === key ? C.cyan : C.dimmer, fontWeight: 700 }}>
+                {key.toUpperCase()}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -935,7 +923,7 @@ function ProspectScouting() {
         <div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div>
             <div style={styles.cardTitle}>SELECTED PROSPECT COMPARISON</div>
-            <div style={{ color: C.dim, fontSize: 9 }}>{compared.length}/4 selected · FP EQ applies your league scoring to that sample's per-game box score and stays pinned beside the player</div>
+            <div style={{ color: C.dim, fontSize: 9 }}>{compared.length}/4 selected</div>
           </div>
           <div style={{ color: C.cyan, fontSize: 9 }}>{sample === "college" ? "COLLEGE PROFILE" : SUMMER_DATA.event.toUpperCase()}</div>
         </div>
@@ -945,7 +933,8 @@ function ProspectScouting() {
             <thead>
               <tr>
                 <th style={{ ...styles.th, position: "sticky", left: 0, zIndex: 3, background: C.panel, minWidth: 145 }}>Player</th>
-                <th style={{ ...styles.thR, position: "sticky", left: 145, zIndex: 3, background: C.panel, color: C.green }}>FP EQ</th>
+                <th style={{ ...styles.thR, position: "sticky", left: 145, zIndex: 3, background: C.panel, color: C.green, minWidth: 62 }}>FP EQ</th>
+                <th style={{ ...styles.thR, position: "sticky", left: 207, zIndex: 3, background: C.panel, color: C.cyan, minWidth: 62 }} title="Games played divided by team games">Avail%</th>
                 <th style={styles.thR}>Board</th><th style={styles.thR}>NBA</th><th style={styles.th}>Team</th><th style={styles.th}>Pos</th>
                 <th style={styles.thR}>GP</th><th style={styles.thR}>MIN</th>
                 {metricView === "counting" ? <>
@@ -961,9 +950,12 @@ function ProspectScouting() {
             <tbody>{compared.map(p => {
               const stats = sample === "college" ? p.college : summerMetrics(SUMMER_PLAYERS[p.id]);
               const stocks = stats ? stats.stl + stats.blk : null;
+              const teamGames = sample === "college" ? stats?.teamGames : SUMMER_DATA.teamGames?.[p.team];
+              const availability = availabilityPct(stats?.gp ?? 0, teamGames);
               return <tr key={p.id}>
                 <td style={{ ...styles.td, position: "sticky", left: 0, zIndex: 2, background: C.panel, color: C.white, fontWeight: 700, minWidth: 145 }}>{p.name}<div style={{ color: C.dim, fontSize: 8, fontWeight: 400 }}>{p.school}</div></td>
-                <td style={{ ...styles.tdR, position: "sticky", left: 145, zIndex: 2, background: C.panel, color: C.green, fontWeight: 700 }}>{fmt(fantasyPointEquivalency(stats))}</td>
+                <td style={{ ...styles.tdR, position: "sticky", left: 145, zIndex: 2, background: C.panel, color: C.green, fontWeight: 700, minWidth: 62 }}>{fmt(fantasyPointEquivalency(stats))}</td>
+                <td style={{ ...styles.tdR, position: "sticky", left: 207, zIndex: 2, background: C.panel, color: availabilityColor(availability), fontWeight: 700, minWidth: 62 }}>{availability == null ? "—" : `${availability}%`}</td>
                 <td style={{ ...styles.tdR, color: C.amber, fontWeight: 700 }}>#{board.findIndex(x => x.id === p.id) + 1}</td><td style={styles.tdR}>#{p.draftPick}</td><td style={{ ...styles.td, color: C.cyan }}>{p.team}</td><td style={styles.td}>{p.position}</td>
                 <td style={styles.tdR}>{fmt(stats?.gp)}</td><td style={styles.tdR}>{fmt(stats?.mpg)}</td>
                 {metricView === "counting" ? <>
@@ -980,26 +972,6 @@ function ProspectScouting() {
         </div>
       </div>
 
-      <div style={{ ...styles.card, borderColor: `${C.cyan}55` }}>
-        <div style={styles.cardTitle}>TRANSLATION LENS — WHAT TO WEIGHT</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
-          {[
-            { title: "1 · ROLE + EFFICIENCY", color: C.green, body: "Read USG% and TS% together. Efficient low usage can be role-limited; huge usage without efficiency can collapse against NBA length." },
-            { title: "2 · CREATION", color: C.cyan, body: "AST%, TOV% and AST:TO are cleaner role indicators than raw assists. They separate initiators from players simply finishing possessions." },
-            { title: "3 · SHOOTING SIGNAL", color: C.amber, body: "Prioritize 3PA rate, free-throw rate and FT% over isolated 3P%. Volume and foul pressure stabilize the projection better than a hot percentage." },
-            { title: "4 · FANTASY DEFENSE", color: C.magenta, body: "STL% and BLK% are the direct translation targets for this scoring system. Track foul rate too: stocks only matter if the player stays on court." },
-            { title: "5 · REBOUNDING", color: C.yellow, body: "ORB% is especially useful because it captures motor, timing and functional strength. Use position context before comparing guards with centers." },
-            { title: "6 · SAMPLE + AGE", color: C.red, body: "Games, minutes, age and opponent-quality splits control confidence. Summer League should update the college prior, never erase it after two games." },
-          ].map(item => <div key={item.title} style={{ background: "#080808", padding: 10, borderLeft: `2px solid ${item.color}` }}>
-            <div style={{ color: item.color, fontWeight: 700, fontSize: 10, marginBottom: 5 }}>{item.title}</div>
-            <div style={{ color: C.white, lineHeight: 1.55 }}>{item.body}</div>
-          </div>)}
-        </div>
-        <div style={{ marginTop: 10, padding: 9, background: "#160d00", color: C.amber, lineHeight: 1.5 }}>
-          CONTEXT ONLY: BPM, PER, win shares, plus-minus, offensive/defensive rating and PIE mix in team strength, lineups or winning impact. Useful cross-checks; poor headline predictors of a fantasy stat line.
-        </div>
-      </div>
-
       <div style={{ ...styles.card, padding: 0, overflow: "hidden" }}>
         <div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div style={styles.cardTitle}>FULL 28-PLAYER BOARD</div>
@@ -1008,7 +980,7 @@ function ProspectScouting() {
         <div style={{ overflowX: "auto" }}>
           <table style={styles.table}>
             <thead><tr>
-              <th style={styles.th}>Pri</th><th style={styles.th}>Move</th><th style={styles.th}>Player</th><th style={{ ...styles.thR, color: C.green }}>FP EQ</th><th style={styles.thR}>NBA pick</th><th style={styles.th}>Team</th><th style={styles.th}>School</th><th style={styles.th}>Pos</th><th style={styles.thR}>GP</th>
+              <th style={styles.th}>Pri</th><th style={styles.th}>Move</th><th style={styles.th}>Player</th><th style={{ ...styles.thR, color: C.green }}>FP EQ</th><th style={{ ...styles.thR, color: C.cyan }} title="Games played divided by team games">Avail%</th><th style={styles.thR}>NBA pick</th><th style={styles.th}>Team</th><th style={styles.th}>School</th><th style={styles.th}>Pos</th><th style={styles.thR}>GP</th>
               {metricView === "counting" ? <><th style={styles.thR}>MIN</th><th style={styles.thR}>PTS</th><th style={styles.thR}>REB</th><th style={styles.thR}>AST</th><th style={styles.thR}>STL</th><th style={styles.thR}>BLK</th><th style={styles.thR}>TOV</th><th style={styles.thR}>STK</th><th style={styles.thR}>FG%</th><th style={styles.thR}>3P%</th><th style={styles.thR}>FT%</th></> : sample === "college" ? <><th style={styles.thR}>TS%</th><th style={styles.thR}>eFG%</th><th style={styles.thR}>USG%</th><th style={styles.thR}>AST%</th><th style={styles.thR}>TOV%</th><th style={styles.thR}>ORB%</th><th style={styles.thR}>DRB%</th><th style={styles.thR}>STL%</th><th style={styles.thR}>BLK%</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th><th style={styles.th}>Role</th></> : <><th style={styles.thR}>TS%</th><th style={styles.thR}>eFG%</th><th style={styles.thR}>AST:TO</th><th style={styles.thR}>3PAr</th><th style={styles.thR}>FTr</th><th style={styles.thR}>PTS/40</th><th style={styles.thR}>REB/40</th><th style={styles.thR}>AST/40</th><th style={styles.thR}>STK/40</th></>}
               <th style={styles.th}>Compare</th>
             </tr></thead>
@@ -1016,12 +988,15 @@ function ProspectScouting() {
               const rank = board.findIndex(x => x.id === p.id) + 1;
               const stats = sample === "college" ? p.college : summerMetrics(SUMMER_PLAYERS[p.id]);
               const stocks = stats ? stats.stl + stats.blk : null;
+              const teamGames = sample === "college" ? stats?.teamGames : SUMMER_DATA.teamGames?.[p.team];
+              const availability = availabilityPct(stats?.gp ?? 0, teamGames);
               const selected = compareIds.includes(p.id);
               return <tr key={p.id} style={p.tier === "T1" ? styles.myTeamRow : {}}>
                 <td style={{ ...styles.td, color: rank <= 4 ? C.amber : C.white, fontWeight: 700 }}>#{rank}</td>
                 <td style={styles.td}><button style={styles.expandBtn} onClick={() => moveProspect(p.id, -1)}>↑</button> <button style={styles.expandBtn} onClick={() => moveProspect(p.id, 1)}>↓</button></td>
                 <td style={{ ...styles.td, color: C.white, fontWeight: 700 }}>{p.name} <span style={styles.badge(p.tier === "T1" ? C.green : p.tier === "T2" ? C.cyan : C.dim)}>{p.tier}</span></td>
                 <td style={{ ...styles.tdR, color: C.green, fontWeight: 700 }}>{fmt(fantasyPointEquivalency(stats))}</td>
+                <td style={{ ...styles.tdR, color: availabilityColor(availability), fontWeight: 700 }}>{availability == null ? "—" : `${availability}%`}</td>
                 <td style={styles.tdR}>#{p.draftPick}</td><td style={{ ...styles.td, color: C.cyan }}>{p.team}</td><td style={styles.td}>{p.school}</td><td style={styles.td}>{p.position}</td>
                 <td style={styles.tdR}>{fmt(stats?.gp)}</td>
                 {metricView === "counting" ? <><td style={styles.tdR}>{fmt(stats?.mpg)}</td><td style={styles.tdR}>{fmt(stats?.pts)}</td><td style={styles.tdR}>{fmt(stats?.reb)}</td><td style={styles.tdR}>{fmt(stats?.ast)}</td><td style={styles.tdR}>{fmt(stats?.stl)}</td><td style={styles.tdR}>{fmt(stats?.blk)}</td><td style={styles.tdR}>{fmt(stats?.tov)}</td><td style={{ ...styles.tdR, color: stocks >= 2.5 ? C.green : C.white }}>{fmt(stocks?.toFixed(1))}</td><td style={styles.tdR}>{fmt(stats?.fg)}</td><td style={styles.tdR}>{fmt(stats?.three)}</td><td style={styles.tdR}>{fmt(stats?.ft)}</td></> : sample === "college" ? <><td style={{ ...styles.tdR, color: C.cyan }}>{stats?.ts == null ? "—" : stats.ts.toFixed(1)}</td><td style={styles.tdR}>{fmt(stats?.efg)}</td><td style={styles.tdR}>{fmt(stats?.usg)}</td><td style={styles.tdR}>{fmt(stats?.astPct)}</td><td style={styles.tdR}>{fmt(stats?.tovPct)}</td><td style={styles.tdR}>{fmt(stats?.orbPct)}</td><td style={styles.tdR}>{fmt(stats?.drbPct)}</td><td style={styles.tdR}>{fmt(stats?.stlPct)}</td><td style={styles.tdR}>{fmt(stats?.blkPct)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td><td style={{ ...styles.td, color: C.cyan }}>{fmt(stats?.role)}</td></> : <><td style={{ ...styles.tdR, color: C.cyan }}>{stats?.ts == null ? "—" : stats.ts.toFixed(1)}</td><td style={styles.tdR}>{stats?.efg == null ? "—" : stats.efg.toFixed(1)}</td><td style={styles.tdR}>{stats?.astTov == null ? "—" : stats.astTov.toFixed(2)}</td><td style={styles.tdR}>{stats?.threePar == null ? "—" : (stats.threePar * 100).toFixed(1)}</td><td style={styles.tdR}>{stats?.ftr == null ? "—" : (stats.ftr * 100).toFixed(1)}</td><td style={styles.tdR}>{per40(stats?.pts, stats?.mpg)?.toFixed(1) ?? "—"}</td><td style={styles.tdR}>{per40(stats?.reb, stats?.mpg)?.toFixed(1) ?? "—"}</td><td style={styles.tdR}>{per40(stats?.ast, stats?.mpg)?.toFixed(1) ?? "—"}</td><td style={styles.tdR}>{per40(stocks, stats?.mpg)?.toFixed(1) ?? "—"}</td></>}
@@ -1032,9 +1007,6 @@ function ProspectScouting() {
         </div>
       </div>
 
-      <div style={{ color: C.dim, fontSize: 10, lineHeight: 1.6 }}>
-        College snapshot {PROSPECT_DATA.asOf}; Las Vegas snapshot {SUMMER_DATA.asOf}. The samples are intentionally separate. All 28 college first-rounders are loaded; Karim López and Sergio De Larrea remain excluded. Missing Vegas rows mean no captured sample, not zero production. Summer League runs through July 19, so the current 2–3 game lines are provisional.
-      </div>
     </div>
   );
 }
@@ -1088,7 +1060,6 @@ export default function App() {
         </div>
         <div style={{ color: C.dim, fontSize: 10, textAlign: "right" }}>
           <div>DATA AS OF: {DATA._meta?.lastUpdated ? new Date(DATA._meta.lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase() : "UNKNOWN"}</div>
-          <div style={{ color: C.amber }}>MODE: TANK</div>
         </div>
       </div>
       <div style={styles.tabs}>
