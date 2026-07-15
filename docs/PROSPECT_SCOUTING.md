@@ -35,7 +35,7 @@ The relevant implementation and data files are:
 | `src/prospects.json` | The 28-player cohort, initial priority order, college profiles, and team-game denominators |
 | `src/summer-league.json` | Current Summer League profiles and team-game denominators |
 | `scripts/fetch-prospects.js` | College Hoops Data ingestion |
-| `scripts/fetch-summer-league.js` | RealGM Summer League ingestion through headless Chromium |
+| `scripts/fetch-summer-league.js` | ESPN Summer League game-level box score ingestion |
 | `.github/workflows/fetch-summer-league.yml` | Scheduled and manual Summer League refresh |
 | `.github/workflows/fetch-fantrax.yml` | Fantrax refresh; shares a concurrency lock with the Summer League workflow |
 | `src/data.json` | Live league scoring settings used by FP EQ |
@@ -98,7 +98,7 @@ Avail% = player games played / team games in the selected sample
 ```
 
 - College team-game denominators come from College Hoops Data team pages.
-- Summer League team-game denominators are discovered from the RealGM event tables.
+- Summer League team-game denominators are counted from completed ESPN event schedules.
 - A player without a captured Summer League row receives 0% only when the player's NBA team has a known event-game denominator.
 - If no reliable denominator exists, the interface shows a dash.
 
@@ -129,26 +129,23 @@ Team pages are still fetched live when a player-page cache is used. The script f
 
 ## Refresh Summer League data
 
-Install the browser once after `npm ci`:
-
 ```bash
-npx playwright install chromium
 npm run fetch-summer
 ```
 
-The script scans RealGM's Summer League averages with multiple sort orders and both qualification modes. This is necessary because one leaderboard page does not expose every player in the cohort. It normalizes common name and team variants before matching to `src/prospects.json`.
+The script scans completed games from ESPN's California, Utah, and Las Vegas Summer League feeds. It aggregates game-level box scores, normalizes common name and team variants, and matches players to `src/prospects.json`.
 
-The default RealGM season URL uses `2027`. Override it when working on another event:
+The default event start date is July 3, 2026. Override it when working on another event:
 
 ```bash
-REALGM_SEASON_YEAR=2028 npm run fetch-summer
+SUMMER_LEAGUE_START_DATE=2027-07-02 npm run fetch-summer
 ```
 
 Safety checks prevent a partial or blocked response from overwriting good data:
 
-- Every scanned table must contain at least 50 rows.
+- The feeds must contain at least 10 completed games.
 - The refresh must match at least eight prospects, or the size of the previous dataset if it contained fewer than eight.
-- The output file is written only after all table scans and validation succeed.
+- The output file is written only after all feed scans and validation succeed.
 
 The number of matched prospect profiles changes as players enter or leave the event. Missing profiles render as missing samples; they are not populated with invented zero counting stats.
 
@@ -168,12 +165,12 @@ When `src/summer-league.json` changes, the workflow commits and pushes the refre
 
 For a future Summer League, update both:
 
-1. The `REALGM_SEASON_YEAR` default in `scripts/fetch-summer-league.js`.
+1. The `SUMMER_LEAGUE_START_DATE` default in `scripts/fetch-summer-league.js`.
 2. The event-window cutoff in `.github/workflows/fetch-summer-league.yml`.
 
 ## Known limitations and next work
 
-- RealGM browser protection requires Playwright/Chromium; a plain HTTP fetch is not reliable.
+- ESPN's public JSON feeds are not a documented API, so schema changes can require parser updates.
 - Summer League is a small and unstable sample. The dashboard keeps it separate from college for that reason.
 - Summer advanced metrics are currently derived from traditional averages, so they do not yet include game-level USG%, AST%, TOV%, rebound rates, or possession estimates.
 - College provider coverage can be incomplete for very short samples; missing values remain dashes.

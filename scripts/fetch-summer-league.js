@@ -1,104 +1,183 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium } from "playwright";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const prospectsPath = path.join(root, "src", "prospects.json");
 const outputPath = path.join(root, "src", "summer-league.json");
 const prospects = JSON.parse(fs.readFileSync(prospectsPath, "utf8")).prospects;
 const previous = JSON.parse(fs.readFileSync(outputPath, "utf8"));
-const seasonYear = globalThis.process.env.REALGM_SEASON_YEAR || "2027";
-const sorts = ["points", "minutes", "rebounds", "assists", "steals", "blocks"];
-const qualificationModes = ["All", "Qualified"];
+const eventStart = globalThis.process.env.SUMMER_LEAGUE_START_DATE || "2026-07-03";
+const leagues = [
+  "nba-summer-california",
+  "nba-summer-utah",
+  "nba-summer-las-vegas",
+];
 
 const normalizeName = (name) => name.toLowerCase()
   .replace(/a\.j\./g, "aj")
   .replace(/,?\s+jr\.?/g, "")
   .replace(/[^a-z0-9]/g, "");
 
-const teamAliases = { BRK: "BKN", GOS: "GSW", PHL: "PHI" };
+const teamAliases = {
+  GS: "GSW",
+  NO: "NOP",
+  NY: "NYK",
+  SA: "SAS",
+  UTAH: "UTA",
+  WSH: "WAS",
+};
 const targets = new Map(prospects.map(prospect => [normalizeName(prospect.name), prospect]));
-const discovered = new Map();
+const totals = new Map();
 const teamGames = {};
+const seenGames = new Set();
 
 function number(value) {
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function parseRow(cells) {
-  if (cells.length < 23 || number(cells[3]) == null) return null;
-  const team = teamAliases[cells[2]] || cells[2];
-  return {
-    name: cells[1],
-    team,
-    stats: {
-      gp: number(cells[3]), mpg: number(cells[4]), pts: number(cells[5]),
-      fgm: number(cells[6]), fga: number(cells[7]), fg: number(cells[8]) * 100,
-      threeM: number(cells[9]), threeA: number(cells[10]), three: number(cells[11]) * 100,
-      ftm: number(cells[12]), fta: number(cells[13]), ft: number(cells[14]) * 100,
-      orb: number(cells[15]), drb: number(cells[16]), reb: number(cells[17]),
-      ast: number(cells[18]), stl: number(cells[19]), blk: number(cells[20]),
-      tov: number(cells[21]), pf: number(cells[22]),
-    },
-  };
+function madeAttempts(value) {
+  const [made, attempts] = String(value || "0-0").split("-");
+  return [number(made), number(attempts)];
 }
 
-const browser = await chromium.launch({
-  headless: true,
-  args: ["--disable-blink-features=AutomationControlled"],
-});
+function round(value) {
+  return Math.round((value + Number.EPSILON) * 10) / 10;
+}
 
-try {
-  const page = await browser.newPage({
-    userAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    viewport: { width: 1440, height: 1000 },
+function average(value, games) {
+  return round(value / games);
+}
+
+function percentage(made, attempts) {
+  return attempts ? round((made / attempts) * 100) : 0;
+}
+
+async function fetchJson(url) {
+  const response = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(30_000),
   });
+  if (!response.ok) throw new Error(`ESPN returned HTTP ${response.status}: ${url}`);
+  return response.json();
+}
 
-  for (const mode of qualificationModes) {
-    for (const sort of sorts) {
-      const url = `https://basketball.realgm.com/nba/stats/${seasonYear}/Averages/${mode}/${sort}/All/desc/1/Summer_League`;
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45_000 });
-      await page.waitForSelector("table tbody tr", { timeout: 20_000 });
-      const rows = await page.locator("table tbody tr").evaluateAll(elements => elements.map(row =>
-        Array.from(row.querySelectorAll("td"), cell => cell.textContent.trim())
-      ));
+function addPlayerGame(player, values) {
+  const [fgm, fga] = madeAttempts(values.FG);
+  const [threeM, threeA] = madeAttempts(values["3PT"]);
+  const [ftm, fta] = madeAttempts(values.FT);
+  const current = totals.get(player.id) || {
+    gp: 0, minutes: 0, pts: 0, fgm: 0, fga: 0, threeM: 0, threeA: 0,
+    ftm: 0, fta: 0, orb: 0, drb: 0, reb: 0, ast: 0, stl: 0,
+    blk: 0, tov: 0, pf: 0,
+  };
 
-      if (rows.length < 50) throw new Error(`Unexpectedly small RealGM table (${rows.length} rows): ${url}`);
+  current.gp += 1;
+  current.minutes += number(values.MIN);
+  current.pts += number(values.PTS);
+  current.fgm += fgm;
+  current.fga += fga;
+  current.threeM += threeM;
+  current.threeA += threeA;
+  current.ftm += ftm;
+  current.fta += fta;
+  current.orb += number(values.OREB);
+  current.drb += number(values.DREB);
+  current.reb += number(values.REB);
+  current.ast += number(values.AST);
+  current.stl += number(values.STL);
+  current.blk += number(values.BLK);
+  current.tov += number(values.TO);
+  current.pf += number(values.PF);
+  totals.set(player.id, current);
+}
 
-      for (const cells of rows) {
-        const parsed = parseRow(cells);
-        if (!parsed) continue;
-        teamGames[parsed.team] = Math.max(teamGames[parsed.team] || 0, parsed.stats.gp);
-        const prospect = targets.get(normalizeName(parsed.name));
-        if (prospect) discovered.set(prospect.id, parsed.stats);
-      }
-      console.log(`Scanned ${mode}/${sort}: ${rows.length} rows, ${discovered.size} prospects matched`);
+function processGame(summary, eventId) {
+  if (seenGames.has(eventId)) return;
+  seenGames.add(eventId);
+
+  for (const teamBox of summary.boxscore?.players || []) {
+    const team = teamAliases[teamBox.team?.abbreviation] || teamBox.team?.abbreviation;
+    if (!team) throw new Error(`Missing team abbreviation for ESPN event ${eventId}`);
+    teamGames[team] = (teamGames[team] || 0) + 1;
+
+    const statistics = teamBox.statistics?.find(group => group.labels?.includes("MIN"));
+    if (!statistics) throw new Error(`Missing player statistics for ${team} in ESPN event ${eventId}`);
+
+    for (const athlete of statistics.athletes || []) {
+      if (athlete.didNotPlay) continue;
+      const player = targets.get(normalizeName(athlete.athlete?.displayName || ""));
+      if (!player) continue;
+      const values = Object.fromEntries(statistics.labels.map((label, index) => [label, athlete.stats[index]]));
+      if (!values.MIN || values.MIN === "--") continue;
+      addPlayerGame(player, values);
     }
   }
-} finally {
-  await browser.close();
+}
+
+const start = eventStart.replaceAll("-", "");
+const end = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+let completedGames = 0;
+
+for (const league of leagues) {
+  const scoreboardUrl = `https://site.api.espn.com/apis/site/v2/sports/basketball/${league}/scoreboard?dates=${start}-${end}&limit=100`;
+  const scoreboard = await fetchJson(scoreboardUrl);
+  const events = (scoreboard.events || []).filter(event => event.status?.type?.completed);
+
+  for (const event of events) {
+    const summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/basketball/${league}/summary?event=${event.id}`;
+    processGame(await fetchJson(summaryUrl), event.id);
+    completedGames += 1;
+  }
+  console.log(`Scanned ${league}: ${events.length} completed games, ${totals.size} prospects matched`);
+}
+
+if (completedGames < 10) {
+  throw new Error(`Only found ${completedGames} completed Summer League games. Existing data was not changed.`);
 }
 
 const minimumMatches = Math.min(8, Object.keys(previous.players || {}).length);
-if (discovered.size < minimumMatches) {
-  throw new Error(`Only matched ${discovered.size} prospects; expected at least ${minimumMatches}. Existing data was not changed.`);
+if (totals.size < minimumMatches) {
+  throw new Error(`Only matched ${totals.size} prospects; expected at least ${minimumMatches}. Existing data was not changed.`);
 }
 
 const orderedPlayers = {};
 for (const prospect of prospects) {
-  if (discovered.has(prospect.id)) orderedPlayers[prospect.id] = discovered.get(prospect.id);
+  const total = totals.get(prospect.id);
+  if (!total) continue;
+  orderedPlayers[prospect.id] = {
+    gp: total.gp,
+    mpg: average(total.minutes, total.gp),
+    pts: average(total.pts, total.gp),
+    fgm: average(total.fgm, total.gp),
+    fga: average(total.fga, total.gp),
+    fg: percentage(total.fgm, total.fga),
+    threeM: average(total.threeM, total.gp),
+    threeA: average(total.threeA, total.gp),
+    three: percentage(total.threeM, total.threeA),
+    ftm: average(total.ftm, total.gp),
+    fta: average(total.fta, total.gp),
+    ft: percentage(total.ftm, total.fta),
+    orb: average(total.orb, total.gp),
+    drb: average(total.drb, total.gp),
+    reb: average(total.reb, total.gp),
+    ast: average(total.ast, total.gp),
+    stl: average(total.stl, total.gp),
+    blk: average(total.blk, total.gp),
+    tov: average(total.tov, total.gp),
+    pf: average(total.pf, total.gp),
+  };
 }
 
 const output = {
   season: previous.season,
   event: "NBA Summer League",
   asOf: new Date().toISOString().slice(0, 10),
-  source: "RealGM automated refresh",
+  source: "ESPN automated refresh",
   teamGames: Object.fromEntries(Object.entries(teamGames).sort(([a], [b]) => a.localeCompare(b))),
   players: orderedPlayers,
 };
 
 fs.writeFileSync(outputPath, `${JSON.stringify(output, null, 2)}\n`);
-console.log(`Updated ${outputPath} with ${discovered.size} prospect profiles`);
+console.log(`Updated ${outputPath} from ${completedGames} games with ${totals.size} prospect profiles`);

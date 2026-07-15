@@ -20,7 +20,7 @@ The **Prospect Scouting** tab contains the 28 college players selected in the fi
 - The full board can be searched and reordered in-session, and any four players can be selected for comparison.
 - Karim López and Sergio De Larrea are excluded from this version because their pre-draft production came outside college basketball.
 
-The cohort and current teams come from the official NBA draft board. College profiles come from College Hoops Data and can be refreshed with `npm run fetch-prospects`. Summer League stats refresh automatically from RealGM every six hours through July 20 and can be refreshed manually with `npm run fetch-summer` after installing Chromium once with `npx playwright install chromium`.
+The cohort and current teams come from the official NBA draft board. College profiles come from College Hoops Data and can be refreshed with `npm run fetch-prospects`. Summer League stats refresh automatically from ESPN game-level box scores every six hours through July 20 and can be refreshed manually with `npm run fetch-summer`.
 
 ## Stack
 - Vite + React
@@ -29,6 +29,7 @@ The cohort and current teams come from the official NBA draft board. College pro
 
 ## Changelog
 
+- 2026-07-15: Replace the Cloudflare-blocked RealGM Summer League scraper with ESPN game-level box score ingestion.
 - 2026-07-14: Add a durable GitHub handoff for prospect-scouting decisions, formulas, data feeds, automation, limitations, and next-session setup.
 - 2026-07-14: Add headless Summer League ingestion and a six-hour GitHub Actions refresh through the end of the event.
 - 2026-07-14: Remove prospect status cards, narrative guidance, mode label, and explanatory footnotes for a data-first layout.
