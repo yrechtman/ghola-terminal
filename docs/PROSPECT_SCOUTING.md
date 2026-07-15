@@ -4,8 +4,8 @@ This is the canonical handoff for the Prospect Scouting feature. Read this file 
 
 ## Current scope
 
-- The cohort is the 28 college players selected in the first round of the 2026 NBA Draft.
-- Karim López and Sergio De Larrea are intentionally excluded because their pre-draft production came outside college basketball.
+- The cohort is all 60 players selected in the 2026 NBA Draft.
+- The six international prospects without NCAA production remain on the board with draft metadata and Summer League results where available; their College sample renders as missing.
 - College and NBA Summer League are separate samples. They share a visual structure but are never blended into a composite score.
 - The default four-player comparison is Cameron Boozer, AJ Dybantsa, Caleb Wilson, and Darryn Peterson.
 - The board can be searched, reordered during the current browser session, and used to select up to four comparison players. Reordering is not persisted.
@@ -32,7 +32,7 @@ The relevant implementation and data files are:
 | File | Responsibility |
 | --- | --- |
 | `src/App.jsx` | Prospect tables, toggles, formulas, formatting, and in-session board state |
-| `src/prospects.json` | The 28-player cohort, initial priority order, college profiles, and team-game denominators |
+| `src/prospects.json` | The 60-player cohort, initial priority order, college profiles, and team-game denominators |
 | `src/summer-league.json` | Current Summer League profiles and team-game denominators |
 | `scripts/fetch-prospects.js` | College Hoops Data ingestion |
 | `scripts/fetch-summer-league.js` | ESPN Summer League game-level box score ingestion |
@@ -119,7 +119,7 @@ This is a descriptive availability measure. It does not distinguish injury, rest
 npm run fetch-prospects
 ```
 
-The script reads College Hoops Data player and team pages, updates all 28 profiles, and writes `src/prospects.json`. Player-page HTML can be supplied from a cache for development:
+The script reads College Hoops Data player and team pages, updates the 54 NCAA profiles, skips the six international prospects without NCAA samples, and writes `src/prospects.json`. Player-page HTML can be supplied from a cache for development:
 
 ```bash
 node scripts/fetch-prospects.js --cache /path/to/player-html-cache
@@ -133,7 +133,7 @@ Team pages are still fetched live when a player-page cache is used. The script f
 npm run fetch-summer
 ```
 
-The script scans completed games from ESPN's California, Utah, and Las Vegas Summer League feeds. It aggregates game-level box scores, normalizes common name and team variants, and matches players to `src/prospects.json`.
+The script scans completed games from ESPN's California, Salt Lake City, and Las Vegas Summer League feeds. It aggregates game-level box scores into one All Summer Events sample, normalizes common name and team variants, and matches players to `src/prospects.json`.
 
 The default event start date is July 3, 2026. Override it when working on another event:
 

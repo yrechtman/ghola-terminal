@@ -11,6 +11,7 @@ const teamGamesCache = new Map();
 
 const schoolSlugs = {
   Connecticut: "uconn",
+  "Southern Methodist": "smu",
   "St. John's": "st-johns",
 };
 
@@ -102,6 +103,11 @@ async function loadTeamGames(prospect) {
 }
 
 for (const prospect of data.prospects) {
+  if (prospect.collegeEligible === false) {
+    prospect.college = null;
+    console.log(`Skipped ${prospect.name}: no NCAA sample`);
+    continue;
+  }
   const html = await loadPage(prospect);
   const college = {};
   for (const [output, provider] of Object.entries(fields)) college[output] = extract(html, provider);

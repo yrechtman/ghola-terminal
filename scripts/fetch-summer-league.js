@@ -15,6 +15,7 @@ const leagues = [
 ];
 
 const normalizeName = (name) => name.toLowerCase()
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
   .replace(/a\.j\./g, "aj")
   .replace(/,?\s+jr\.?/g, "")
   .replace(/[^a-z0-9]/g, "");
@@ -172,7 +173,7 @@ for (const prospect of prospects) {
 
 const output = {
   season: previous.season,
-  event: "NBA Summer League",
+  event: "All NBA Summer League Events",
   asOf: new Date().toISOString().slice(0, 10),
   source: "ESPN automated refresh",
   teamGames: Object.fromEntries(Object.entries(teamGames).sort(([a], [b]) => a.localeCompare(b))),

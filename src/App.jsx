@@ -974,7 +974,7 @@ function ProspectScouting() {
 
       <div style={{ ...styles.card, padding: 0, overflow: "hidden" }}>
         <div style={{ padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-          <div style={styles.cardTitle}>FULL 28-PLAYER BOARD</div>
+          <div style={styles.cardTitle}>FULL {PROSPECTS.length}-PLAYER DRAFT BOARD</div>
           <input style={styles.searchInput} value={search} onChange={e => setSearch(e.target.value)} placeholder="Search player, team, school..." />
         </div>
         <div style={{ overflowX: "auto" }}>
