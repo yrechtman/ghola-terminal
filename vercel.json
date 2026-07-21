@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/league", "destination": "/index.html" },
+    { "source": "/trade-analyzer", "destination": "/index.html" },
+    { "source": "/draft-capital", "destination": "/index.html" },
+    { "source": "/prospect-scouting", "destination": "/index.html" },
+    { "source": "/free-agents", "destination": "/index.html" }
+  ]
+}

@@ -28,8 +28,11 @@ The cohort and current teams come from the official NBA draft board. College pro
 - Recharts
 - Deployed on Vercel
 
+Each main tab has a direct, reload-safe URL: `/`, `/league`, `/trade-analyzer`, `/draft-capital`, `/prospect-scouting`, and `/free-agents`. Browser back and forward navigation follows the active tab.
+
 ## Changelog
 
+- 2026-07-21: Add direct URLs and browser-history navigation for every main tab.
 - 2026-07-15: Expand Prospect Scouting to all 60 draft picks and clarify that Summer stats combine all three events.
 - 2026-07-15: Replace the Cloudflare-blocked RealGM Summer League scraper with ESPN game-level box score ingestion.
 - 2026-07-14: Add a durable GitHub handoff for prospect-scouting decisions, formulas, data feeds, automation, limitations, and next-session setup.

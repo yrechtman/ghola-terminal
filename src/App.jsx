@@ -153,7 +153,7 @@ const styles = {
   tabs: { display: "flex", gap: 0, background: "#080808", borderBottom: `1px solid ${C.dimmer}` },
   tab: (active) => ({
     padding: "8px 20px", cursor: "pointer", fontSize: 11, fontWeight: 600, letterSpacing: 1,
-    textTransform: "uppercase", fontFamily: font, border: "none",
+    textTransform: "uppercase", textDecoration: "none", fontFamily: font, border: "none",
     background: active ? C.panel : "transparent",
     color: active ? C.amber : C.dim,
     borderBottom: active ? `2px solid ${C.amber}` : "2px solid transparent",
@@ -1072,17 +1072,34 @@ function FreeAgents() {
 // ============================================================
 
 const TABS = [
-  { id: "roster", label: "My Roster", component: MyRoster },
-  { id: "league", label: "League", component: LeagueLandscape },
-  { id: "trade", label: "Trade Analyzer", component: TradeAnalyzer },
-  { id: "draft", label: "Draft Capital", component: DraftCapital },
-  { id: "prospects", label: "Prospect Scouting", component: ProspectScouting },
-  { id: "fa", label: "Free Agents", component: FreeAgents },
+  { id: "roster", path: "/", label: "My Roster", component: MyRoster },
+  { id: "league", path: "/league", label: "League", component: LeagueLandscape },
+  { id: "trade", path: "/trade-analyzer", label: "Trade Analyzer", component: TradeAnalyzer },
+  { id: "draft", path: "/draft-capital", label: "Draft Capital", component: DraftCapital },
+  { id: "prospects", path: "/prospect-scouting", label: "Prospect Scouting", component: ProspectScouting },
+  { id: "fa", path: "/free-agents", label: "Free Agents", component: FreeAgents },
 ];
 
+function tabIdFromPath() {
+  return TABS.find(tab => tab.path === window.location.pathname)?.id || "roster";
+}
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState("roster");
+  const [activeTab, setActiveTab] = useState(tabIdFromPath);
   const ActiveComponent = TABS.find(t => t.id === activeTab).component;
+
+  useEffect(() => {
+    const syncTabToPath = () => setActiveTab(tabIdFromPath());
+    window.addEventListener("popstate", syncTabToPath);
+    return () => window.removeEventListener("popstate", syncTabToPath);
+  }, []);
+
+  const navigateToTab = (event, tab) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (window.location.pathname !== tab.path) window.history.pushState({}, "", tab.path);
+    setActiveTab(tab.id);
+  };
 
   return (
     <div style={styles.app}>
@@ -1096,9 +1113,9 @@ export default function App() {
       </div>
       <div style={styles.tabs}>
         {TABS.map(t => (
-          <button key={t.id} style={styles.tab(activeTab === t.id)} onClick={() => setActiveTab(t.id)}>
+          <a key={t.id} href={t.path} aria-current={activeTab === t.id ? "page" : undefined} style={styles.tab(activeTab === t.id)} onClick={event => navigateToTab(event, t)}>
             {t.label}
-          </button>
+          </a>
         ))}
       </div>
       <div style={styles.content}>
