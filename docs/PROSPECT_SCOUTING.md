@@ -8,7 +8,7 @@ This is the canonical handoff for the Prospect Scouting feature. Read this file 
 - The six international prospects without NCAA production remain on the board with draft metadata and Summer League results where available; their College sample renders as missing.
 - College and NBA Summer League are separate samples. They share a visual structure but are never blended into a composite score.
 - The default four-player comparison is Cameron Boozer, AJ Dybantsa, Caleb Wilson, and Darryn Peterson.
-- The board can be searched, reordered during the current browser session, and used to select up to four comparison players. Reordering is not persisted.
+- The board can be searched, reordered with the arrow controls, and used to select up to four comparison players. Its order is saved in browser storage and restored after a page reload; newly ingested prospects are appended without disturbing the saved order.
 - The interface is deliberately data-first. Do not restore narrative cards, mode labels, methodology disclaimers, or large blocks of explanatory copy to the page.
 
 ## Start a new session here

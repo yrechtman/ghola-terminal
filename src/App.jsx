@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import DATA from "./data.json";
 import PROSPECT_DATA from "./prospects.json";
@@ -34,6 +34,30 @@ const { DRAFT_PICKS, STANDINGS, RAW_CSV } = DATA;
 const PLAYER_PROPS = DATA.PLAYER_PROPS || {};
 const DYNASTY_ADP = DATA.DYNASTY_ADP || {};
 const PROSPECTS = PROSPECT_DATA.prospects || [];
+const DRAFT_BOARD_STORAGE_KEY = "ghola-terminal:draft-board:v1";
+
+function defaultDraftBoard() {
+  return [...PROSPECTS].sort((a, b) => a.priority - b.priority);
+}
+
+function loadDraftBoard() {
+  const defaultBoard = defaultDraftBoard();
+
+  try {
+    const savedIds = JSON.parse(localStorage.getItem(DRAFT_BOARD_STORAGE_KEY));
+    if (!Array.isArray(savedIds)) return defaultBoard;
+
+    const prospectsById = new Map(defaultBoard.map(prospect => [prospect.id, prospect]));
+    const savedProspects = savedIds
+      .map(id => prospectsById.get(id))
+      .filter(Boolean);
+    const savedIdSet = new Set(savedProspects.map(prospect => prospect.id));
+
+    return [...savedProspects, ...defaultBoard.filter(prospect => !savedIdSet.has(prospect.id))];
+  } catch {
+    return defaultBoard;
+  }
+}
 
 function normalizeName(name) {
   return name.toLowerCase()
@@ -864,11 +888,19 @@ function availabilityColor(value) {
 }
 
 function ProspectScouting() {
-  const [board, setBoard] = useState(() => [...PROSPECTS].sort((a, b) => a.priority - b.priority));
+  const [board, setBoard] = useState(loadDraftBoard);
   const [sample, setSample] = useState("college");
   const [metricView, setMetricView] = useState("counting");
   const [search, setSearch] = useState("");
   const [compareIds, setCompareIds] = useState(() => PROSPECTS.filter(p => p.tier === "T1").map(p => p.id));
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFT_BOARD_STORAGE_KEY, JSON.stringify(board.map(prospect => prospect.id)));
+    } catch {
+      // Keep reordering usable when browser storage is unavailable.
+    }
+  }, [board]);
 
   const moveProspect = (id, direction) => {
     setBoard(current => {

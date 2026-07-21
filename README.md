@@ -15,9 +15,10 @@ The **Prospect Scouting** tab contains all 60 players selected in the 2026 NBA D
 - The selected-prospect comparison is a dense, horizontally scrollable table with matching College and All Summer Events stat structures.
 - A persistent **FP EQ** column applies the league's exact fantasy scoring weights to each College or All Summer Events per-game box score.
 - A persistent **Avail%** column shows player games divided by team games for the selected sample, highlighting missed time in both college and Summer League.
+- Draft-board moves are saved in the current browser and restored after the page reloads.
 - A separate Counting / Advanced toggle changes the statistical lens without hiding player identity, sample size, FP EQ, or Avail%.
 - The Summer League feed captures matched cohort players as their event samples become available; missing rows render as no sample rather than invented counting-stat zeroes.
-- The full board can be searched and reordered in-session, and any four players can be selected for comparison.
+- The full board can be searched and reordered, and any four players can be selected for comparison.
 - The six international prospects without NCAA samples remain on the board with draft metadata and Summer League results where available.
 
 The cohort and current teams come from the official NBA draft board. College profiles come from College Hoops Data and can be refreshed with `npm run fetch-prospects`. Summer League stats aggregate the California, Salt Lake City, and Las Vegas events from ESPN game-level box scores, refresh automatically every six hours through July 20, and can be refreshed manually with `npm run fetch-summer`.
